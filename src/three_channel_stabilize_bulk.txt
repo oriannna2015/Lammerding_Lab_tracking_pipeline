@@ -1,0 +1,94 @@
+print("✅ Macro started: RGB-based stabilization for all locations");
+
+root = "D:/Lammerding Lab/Final Tracking Data/";
+
+reps = newArray("Rep 1", "Rep 3", "Rep 4");
+times = newArray("0-24h", "24-48h", "48-72h", "72-96h");
+types = newArray("Dense", "5um", "10um");
+
+skippedList = newArray();
+
+function processLocationFolder(folderPath, locName) {
+    print("▶ Processing: " + folderPath + locName);
+
+    run("Image Sequence...", "open=[" + folderPath + locName + "_Red/] sort");
+    rename("Red");
+
+    run("Image Sequence...", "open=[" + folderPath + locName + "_Green/] sort");
+    rename("Green");
+
+    run("Image Sequence...", "open=[" + folderPath + locName + "_Phase/] sort");
+    rename("Phase");
+
+    run("Merge Channels...", "c1=Red c2=Green c3=Phase create ignore");
+    rename("Merged_RGB");
+
+    run("RGB Color");
+    run("Image Stabilizer", "transformation=Affine maximum_pyramid_level=3 template_update=0");
+
+    run("Split Channels");
+
+    selectWindow("Merged_RGB (blue)");
+    run("Grays");
+    rename("Phase_Stabilized");
+
+    selectWindow("Merged_RGB (green)");
+    rename("Green_Stabilized");
+
+    selectWindow("Merged_RGB (red)");
+    rename("Red_Stabilized");
+
+    selectWindow("Green_Stabilized");
+    saveAs("Tiff", folderPath + locName + "_Green_Stabilized.tif");
+
+    selectWindow("Phase_Stabilized");
+    saveAs("Tiff", folderPath + locName + "_Phase_Stabilized.tif");
+
+    selectWindow("Red_Stabilized");
+    saveAs("Tiff", folderPath + locName + "_Red_Stabilized.tif");
+
+    run("Close All");
+    print("✅ Done: " + locName);
+}
+
+// ---------- MAIN BATCH LOOP ----------
+for (i = 0; i < reps.length; i++) {
+    for (j = 0; j < times.length; j++) {
+        for (k = 0; k < types.length; k++) {
+
+            basePath = root + reps[i] + "/" + times[j] + "/" + types[k] + "/";
+            print("📁 Checking: " + basePath);
+
+            list = getFileList(basePath);
+
+            for (l = 0; l < list.length; l++) {
+                if (endsWith(list[l], "/")) {
+                    loc = substring(list[l], 0, lengthOf(list[l]) - 1);
+                    fullPath = basePath + loc + "/";
+
+                    redPath = fullPath + loc + "_Red/";
+                    greenPath = fullPath + loc + "_Green/";
+                    phasePath = fullPath + loc + "_Phase/";
+
+                    redOut = fullPath + loc + "_Red_Stabilized.tif";
+
+                    if (File.exists(redOut)) {
+                        print("⏩ Skipped (already processed): " + loc);
+                        skippedList = Array.concat(skippedList, loc);
+                        continue;
+                    }
+
+                    if (File.isDirectory(redPath) && File.isDirectory(greenPath) && File.isDirectory(phasePath)) {
+                        processLocationFolder(fullPath, loc);
+                    } else {
+                        print("⚠️ Skipped (missing channels): " + loc);
+                        missingList = Array.concat(missingList, loc);
+                    }
+                }
+            }
+        }
+    }
+}
+
+print("🏁 All locations completed!");
+
