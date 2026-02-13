@@ -2,6 +2,8 @@
 Channel Splitter Module
 
 Splits multi-channel TIFF stacks into separate channel folders within the source location.
+
+Author: Oriana Chen
 """
 import os
 import shutil

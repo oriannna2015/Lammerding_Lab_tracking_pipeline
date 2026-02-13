@@ -1,7 +1,8 @@
 """
-GUI Application for Integrated Cell Tracking Pipeline
+GUI Application for Lammerding Lab Cell Tracking Support
 
 A graphical user interface for the cell tracking pipeline.
+Author: Oriana Chen
 """
 import tkinter as tk
 from tkinter import ttk, filedialog, scrolledtext, messagebox
@@ -29,7 +30,7 @@ class PipelineGUI:
     def __init__(self, root):
         """Initialize the GUI."""
         self.root = root
-        self.root.title("Cell Tracking Pipeline - Integrated Processing Platform")
+        self.root.title("Lammerding Lab - Cell Tracking Support")
         self.root.geometry("1000x700")
         
         # Configuration
@@ -48,9 +49,9 @@ class PipelineGUI:
         header_frame = ttk.Frame(self.root, padding="10")
         header_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E))
         
-        ttk.Label(header_frame, text="Cell Tracking Pipeline", 
+        ttk.Label(header_frame, text="Lammerding Lab - Cell Tracking Support", 
                  font=('Arial', 16, 'bold')).pack()
-        ttk.Label(header_frame, text="Integrated Processing Platform v2.0",
+        ttk.Label(header_frame, text="Integrated Processing Platform v2.0 | by Oriana Chen",
                  font=('Arial', 10)).pack()
         
         # Main content area with notebook (tabs)
@@ -161,12 +162,19 @@ class PipelineGUI:
         button_frame = ttk.Frame(self.config_tab)
         button_frame.grid(row=row, column=0, columnspan=3, pady=20)
         
-        ttk.Button(button_frame, text="Save Config", 
+        # First row: Save and Load buttons
+        first_row = ttk.Frame(button_frame)
+        first_row.pack(pady=5)
+        ttk.Button(first_row, text="Save Config", 
                   command=self._save_config).pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text="Load Config", 
+        ttk.Button(first_row, text="Load Config", 
                   command=self._load_config).pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text="Validate", 
-                  command=self._validate_config).pack(side=tk.LEFT, padx=5)
+        
+        # Second row: Apply Config button
+        second_row = ttk.Frame(button_frame)
+        second_row.pack(pady=5)
+        ttk.Button(second_row, text="Apply Config", 
+                  command=self._validate_config).pack(padx=5)
     
     def _create_pipeline_tab(self):
         """Create pipeline execution tab."""
@@ -174,10 +182,11 @@ class PipelineGUI:
         info_frame = ttk.LabelFrame(self.pipeline_tab, text="Project Info", padding="10")
         info_frame.pack(fill=tk.X, pady=5)
         
-        self.location_count_var = tk.StringVar(value="Not scanned")
+        self.location_count_var = tk.StringVar(value="Please load the files first!")
         ttk.Label(info_frame, text="Detected Locations:").pack(side=tk.LEFT)
-        ttk.Label(info_frame, textvariable=self.location_count_var, 
-                 font=('Arial', 10, 'bold')).pack(side=tk.LEFT, padx=10)
+        self.location_count_label = ttk.Label(info_frame, textvariable=self.location_count_var, 
+                 font=('Arial', 10, 'bold'), foreground='red')
+        self.location_count_label.pack(side=tk.LEFT, padx=10)
         
         ttk.Button(info_frame, text="🔍 Scan Data Folder", 
                   command=self._scan_locations).pack(side=tk.RIGHT, padx=5)
@@ -415,6 +424,7 @@ class PipelineGUI:
                 
                 if self.locations:
                     self.location_count_var.set(f"{len(self.locations)} locations")
+                    self.location_count_label.config(foreground='green')
                     self.log(f"✓ Found {len(self.locations)} locations", "SUCCESS")
                     
                     # Show sample
@@ -425,6 +435,7 @@ class PipelineGUI:
                         self.log(f"  ... and {len(self.locations) - 5} more", "INFO")
                 else:
                     self.location_count_var.set("0 locations")
+                    self.location_count_label.config(foreground='orange')
                     self.log("No locations found", "WARNING")
                     
             except Exception as e:
@@ -519,7 +530,7 @@ class PipelineGUI:
                 self._update_step_status(1, "error", "Failed to generate script")
                 
         except Exception as e:
-            self.log(f"Step 2 错误: {e}", "ERROR")
+            self.log(f"Step 2 Error: {e}", "ERROR")
             self._update_step_status(1, "error")
     
     def _show_step2_verification_dialog(self):
@@ -918,6 +929,12 @@ print("Please configure according to your data structure");
     def _verify_stabilization(self):
         """Verify that stabilization has been completed for all locations."""
         try:
+            # Check if locations have been scanned
+            if not self.locations:
+                self.log("Please scan data folder first!", "ERROR")
+                messagebox.showerror("Error", "No locations loaded. Please click 'Scan Data Folder' first.")
+                return {'total': 0, 'success': 0, 'missing': 0}
+            
             input_folder = Path(self.config.get('input_data_folder'))
             stats = {'total': len(self.locations), 'success': 0, 'missing': 0}
             
@@ -943,6 +960,12 @@ print("Please configure according to your data structure");
     def _verify_trackmate(self):
         """Verify that TrackMate tracking has been completed for all locations."""
         try:
+            # Check if locations have been scanned
+            if not self.locations:
+                self.log("Please scan data folder first!", "ERROR")
+                messagebox.showerror("Error", "No locations loaded. Please click 'Scan Data Folder' first.")
+                return {'total': 0, 'success': 0, 'missing': 0}
+            
             stats = {'total': len(self.locations), 'success': 0, 'missing': 0}
             
             for location in self.locations:

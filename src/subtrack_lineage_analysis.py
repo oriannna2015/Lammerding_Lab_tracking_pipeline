@@ -11,6 +11,7 @@ Key Features:
 - Generates 3 CSV outputs: statistics, edges, and lineage
 - Supports batch processing of multiple locations
 
+Author: Oriana Chen
 Date: 2026-02-11
 """
 

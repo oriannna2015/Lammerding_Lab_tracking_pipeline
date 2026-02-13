@@ -1,7 +1,7 @@
 """
-Launch script for the Pipeline GUI Application.
+Launch script for Lammerding Lab Cell Tracking Support.
 
-启动细胞追踪数据处理平台图形界面。
+Author: Oriana Chen
 """
 import sys
 from pathlib import Path

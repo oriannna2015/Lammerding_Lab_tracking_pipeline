@@ -8,6 +8,7 @@ Usage scenarios:
 - After batch processing in TrackMate, all results are in one OutputTracks folder
 - Need to reorganize files back to: Data Root / Rep X / Time / Type / Location / Tracking Result /
 
+Author: Oriana Chen
 Date: 2026-02-13
 """
 

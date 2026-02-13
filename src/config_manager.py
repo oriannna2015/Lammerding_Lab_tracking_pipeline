@@ -2,6 +2,8 @@
 Configuration Manager Module
 
 Handles user configuration including paths and parameters.
+
+Author: Oriana Chen
 """
 import os
 import json

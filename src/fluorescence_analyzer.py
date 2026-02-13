@@ -3,6 +3,8 @@ Fluorescence Analyzer Module
 
 Extracts fluorescence intensity over tracked cells and subtracks.
 Now supports subtrack-based analysis with Red/Green ratio calculation.
+
+Author: Oriana Chen
 """
 import os
 import time

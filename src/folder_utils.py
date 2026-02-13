@@ -2,6 +2,8 @@
 Folder Utilities Module
 
 Utility functions for folder scanning and path management.
+
+Author: Oriana Chen
 """
 import os
 from pathlib import Path

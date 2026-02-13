@@ -1,3 +1,6 @@
+// ImageJ Macro Language
+// @ImageJ ij
+
 print("✅ Macro started: RGB-based stabilization for all locations");
 
 root = "D:/Lammerding Lab/Final Tracking Data/";

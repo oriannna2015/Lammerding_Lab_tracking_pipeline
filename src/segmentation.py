@@ -2,6 +2,8 @@
 Segmentation Module
 
 Performs cell segmentation using StarDist model.
+
+Author: Oriana Chen
 """
 import os
 import gc
