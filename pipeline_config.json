@@ -1,0 +1,16 @@
+{
+  "channel_names": [
+    "Green",
+    "Phase",
+    "Red"
+  ],
+  "stardist_model_path": "C:/Tracking Data/Pipeline Resource Package/StarDist_Cont_Grey_4_200_128_2_0.0003_Aug4_150epoch",
+  "max_splits_allowed": 3,
+  "min_track_duration_frames": 20,
+  "working_directory": "C:/Tracking Data/Temp Processing",
+  "input_data_folder": "C:/Tracking Data/Test_Data_Folder",
+  "input_mask_folder": "InputMask",
+  "output_tracks_folder": "OutputTracks",
+  "input_mask_full_path": "C:\\Tracking Data\\Temp Processing\\InputMask",
+  "output_tracks_full_path": "C:\\Tracking Data\\Temp Processing\\OutputTracks"
+}

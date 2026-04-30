@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>CellTracker Pro</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-tertiary-fixed": "#2a1700",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#d3e4fe",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "error-container": "#ffdad6",
+                        "on-secondary-container": "#00714d",
+                        "surface-tint": "#005db6",
+                        "inverse-primary": "#a9c7ff",
+                        "surface-container": "#e5eeff",
+                        "on-tertiary-container": "#ffd29e",
+                        "primary-fixed-dim": "#a9c7ff",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-background": "#0b1c30",
+                        "tertiary-fixed": "#ffddb8",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "tertiary": "#663f00",
+                        "surface-container-high": "#dce9ff",
+                        "primary": "#00478d",
+                        "primary-container": "#005eb8",
+                        "outline": "#727783",
+                        "on-surface": "#0b1c30",
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "surface-bright": "#f8f9ff",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed-dim": "#4edea3",
+                        "inverse-surface": "#213145",
+                        "secondary-fixed": "#6ffbbe",
+                        "on-secondary-fixed-variant": "#005236",
+                        "background": "#f8f9ff",
+                        "tertiary-container": "#865400",
+                        "outline-variant": "#c2c6d4",
+                        "surface-container-low": "#eff4ff",
+                        "on-surface-variant": "#424752",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#001b3d",
+                        "on-primary-fixed-variant": "#00468c",
+                        "surface": "#f8f9ff",
+                        "on-error": "#ffffff",
+                        "primary-fixed": "#d6e3ff",
+                        "secondary": "#006c49",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-container": "#c8daff",
+                        "on-secondary-fixed": "#002113",
+                        "surface-dim": "#cbdbf5",
+                        "secondary-container": "#6cf8bb"
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.125rem",
+                        lg: "0.25rem",
+                        xl: "0.5rem",
+                        full: "0.75rem"
+                    },
+                    spacing: {
+                        "margin-page": "32px",
+                        "stack-sm": "8px",
+                        "section-gap": "24px",
+                        "gutter": "16px",
+                        "unit": "4px",
+                        "stack-md": "16px"
+                    },
+                    fontFamily: {
+                        "data-mono": ["Space Grotesk"],
+                        "display-lg": ["Inter"],
+                        "body-base": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    fontSize: {
+                        "data-mono": ["13px", {lineHeight: "18px", letterSpacing: "0.01em", fontWeight: "500"}],
+                        "display-lg": ["24px", {lineHeight: "32px", letterSpacing: "-0.02em", fontWeight: "700"}],
+                        "body-base": ["14px", {lineHeight: "20px", fontWeight: "400"}],
+                        "label-caps": ["11px", {lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "700"}],
+                        "headline-md": ["18px", {lineHeight: "24px", fontWeight: "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        .nav-active {
+            background-color: rgb(239 246 255);
+            color: rgb(29 78 216);
+            border-right: 4px solid rgb(37 99 235);
+            font-weight: 500;
+        }
+        .step-card { transition: all 0.2s ease; }
+        .step-card:hover { border-color: #005eb8; }
+        #log-container::-webkit-scrollbar { width: 8px; }
+        #log-container::-webkit-scrollbar-track { background: #f1f5f9; }
+        #log-container::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .pulse-dot { animation: pulse-dot 1.5s ease-in-out infinite; }
+        .log-entry { border-left: 3px solid transparent; padding: 4px 12px; margin: 2px 0; font-size: 12px; }
+        .log-info { border-left-color: #3b82f6; background: #eff6ff; }
+        .log-success { border-left-color: #22c55e; background: #f0fdf4; }
+        .log-error { border-left-color: #ef4444; background: #fef2f2; }
+        .log-warning { border-left-color: #f59e0b; background: #fffbeb; }
+        .btn-loading { pointer-events: none; opacity: 0.7; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-base">
+    <!-- TopNavBar -->
+    <header class="bg-white border-b border-slate-200 flex justify-between items-center w-full px-6 h-16 max-w-full antialiased sticky top-0 z-50">
+        <div class="flex items-center gap-8">
+            <span class="text-xl font-bold tracking-tight text-slate-900">CellTracker Pro</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span id="status-badge" class="px-3 py-1 bg-surface-container rounded-full text-xs font-bold text-on-surface-variant">READY</span>
+            <span class="text-label-caps font-label-caps text-slate-400 uppercase">v2.0</span>
+            <button onclick="shutdownServer()" class="ml-4 px-3 py-1 text-xs font-semibold text-slate-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Quit Application">
+                <span class="material-symbols-outlined text-[18px]">power_settings_new</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="flex h-[calc(100vh-64px)] overflow-hidden">
+        <!-- SideNavBar -->
+        <aside class="fixed left-0 top-16 h-full flex flex-col bg-slate-50 w-64 border-r border-slate-200 z-40">
+            <div class="p-6 flex flex-col gap-1">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-primary rounded flex items-center justify-center text-on-primary">
+                        <span class="material-symbols-outlined" style="font-size:20px;">science</span>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-black text-slate-800 leading-tight">Cell Tracking</h2>
+                        <p class="text-[10px] uppercase tracking-widest text-secondary font-bold">Pipeline Studio</p>
+                    </div>
+                </div>
+            </div>
+            <nav class="flex-1 px-4 mt-4 space-y-1">
+                <a onclick="switchPage('config')" id="nav-config" class="flex items-center gap-3 px-3 py-2 nav-active cursor-pointer transition-all duration-100 text-sm">
+                    <span class="material-symbols-outlined">settings_input_component</span>
+                    Configuration
+                </a>
+                <a onclick="switchPage('pipeline')" id="nav-pipeline" class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors text-sm font-medium">
+                    <span class="material-symbols-outlined">account_tree</span>
+                    Pipeline
+                </a>
+                <a onclick="switchPage('log')" id="nav-log" class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors text-sm font-medium">
+                    <span class="material-symbols-outlined">terminal</span>
+                    Log
+                    <span id="log-badge" class="ml-auto bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-full font-bold hidden">0</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t border-slate-200 space-y-1">
+                <a onclick="openDocumentation()" class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors font-medium text-sm">
+                    <span class="material-symbols-outlined">description</span>
+                    Documentation
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 ml-64 overflow-y-auto bg-background p-margin-page">
+            <!-- ==================== CONFIGURATION PAGE ==================== -->
+            <div id="page-config" class="max-w-5xl mx-auto space-y-section-gap">
+                <header>
+                    <h1 class="text-display-lg font-display-lg text-on-surface">Configuration Dashboard</h1>
+                    <p class="text-body-base text-on-surface-variant mt-1">Set up your local directories and analysis parameters for the cell tracking pipeline.</p>
+                </header>
+
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+                    <!-- Path Configuration Card -->
+                    <section class="md:col-span-12 bg-white border border-outline-variant p-6 space-y-stack-md">
+                        <div class="flex items-center gap-2 border-b border-surface-container pb-4 mb-4">
+                            <span class="material-symbols-outlined text-primary">folder_open</span>
+                            <h2 class="text-headline-md font-headline-md">Path Configuration</h2>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+                            <div class="space-y-unit">
+                                <label class="text-label-caps font-label-caps text-on-surface-variant uppercase">Input Data Folder</label>
+                                <div class="flex gap-2">
+                                    <input id="input-folder" class="flex-1 bg-surface-container-lowest border border-outline-variant px-3 py-2 text-data-mono font-data-mono text-on-surface focus:ring-1 focus:ring-primary outline-none transition-all" type="text" placeholder="Select input data folder..."/>
+                                    <button onclick="browseFolder('input_folder')" class="px-4 py-2 bg-white border border-outline-variant hover:bg-surface-container transition-colors flex items-center gap-2 text-body-base font-semibold">
+                                        <span class="material-symbols-outlined text-[18px]">search</span>
+                                        Browse
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="space-y-unit">
+                                <label class="text-label-caps font-label-caps text-on-surface-variant uppercase">Working Directory</label>
+                                <div class="flex gap-2">
+                                    <input id="working-dir" class="flex-1 bg-surface-container-lowest border border-outline-variant px-3 py-2 text-data-mono font-data-mono text-on-surface focus:ring-1 focus:ring-primary outline-none transition-all" type="text" placeholder="Select working directory..."/>
+                                    <button onclick="browseFolder('working_directory')" class="px-4 py-2 bg-white border border-outline-variant hover:bg-surface-container transition-colors flex items-center gap-2 text-body-base font-semibold">
+                                        <span class="material-symbols-outlined text-[18px]">search</span>
+                                        Browse
+                                    </button>
+                                </div>
+                                <p class="text-[11px] text-on-surface-variant">TrackMate outputs should be in: working_dir/OutputTracks</p>
+                            </div>
+                            <div class="md:col-span-2 space-y-unit">
+                                <label class="text-label-caps font-label-caps text-on-surface-variant uppercase">StarDist Model Path</label>
+                                <div class="flex gap-2">
+                                    <input id="model-path" class="flex-1 bg-surface-container-lowest border border-outline-variant px-3 py-2 text-data-mono font-data-mono text-on-surface focus:ring-1 focus:ring-primary outline-none transition-all" type="text" placeholder="Select StarDist model folder..."/>
+                                    <button onclick="browseFolder('stardist_model')" class="px-4 py-2 bg-white border border-outline-variant hover:bg-surface-container transition-colors flex items-center gap-2 text-body-base font-semibold">
+                                        <span class="material-symbols-outlined text-[18px]">search</span>
+                                        Browse
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Channel Names -->
+                    <section class="md:col-span-7 bg-white border border-outline-variant p-6 flex flex-col">
+                        <div class="flex items-center gap-2 border-b border-surface-container pb-4 mb-6">
+                            <span class="material-symbols-outlined text-primary">palette</span>
+                            <h2 class="text-headline-md font-headline-md">Channel Names</h2>
+                        </div>
+                        <div class="space-y-stack-md flex-1">
+                            <div class="flex items-center gap-gutter">
+                                <div class="w-32 text-label-caps font-label-caps text-on-surface-variant uppercase">Green Channel</div>
+                                <input id="channel-green" class="flex-1 border-b border-outline-variant py-1 text-body-base focus:border-primary outline-none transition-all bg-transparent" type="text" value="Green"/>
+                            </div>
+                            <div class="flex items-center gap-gutter">
+                                <div class="w-32 text-label-caps font-label-caps text-on-surface-variant uppercase">Phase Contrast</div>
+                                <input id="channel-phase" class="flex-1 border-b border-outline-variant py-1 text-body-base focus:border-primary outline-none transition-all bg-transparent" type="text" value="Phase"/>
+                            </div>
+                            <div class="flex items-center gap-gutter">
+                                <div class="w-32 text-label-caps font-label-caps text-on-surface-variant uppercase">Red Channel</div>
+                                <input id="channel-red" class="flex-1 border-b border-outline-variant py-1 text-body-base focus:border-primary outline-none transition-all bg-transparent" type="text" value="Red"/>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- QC Parameters -->
+                    <section class="md:col-span-5 bg-white border border-outline-variant p-6 flex flex-col">
+                        <div class="flex items-center gap-2 border-b border-surface-container pb-4 mb-6">
+                            <span class="material-symbols-outlined text-primary">speed</span>
+                            <h2 class="text-headline-md font-headline-md">QC Parameters</h2>
+                        </div>
+                        <div class="space-y-stack-md">
+                            <div class="space-y-unit">
+                                <div class="flex justify-between items-center">
+                                    <label class="text-label-caps font-label-caps text-on-surface-variant uppercase">Max Splits Allowed</label>
+                                    <span id="splits-display" class="text-data-mono text-primary font-bold">3</span>
+                                </div>
+                                <div class="relative h-10 border border-outline-variant rounded bg-surface-container-lowest flex items-center px-3">
+                                    <input id="max-splits" class="w-full bg-transparent border-none focus:ring-0 text-body-base font-data-mono outline-none" type="number" value="3" min="0" max="10" oninput="document.getElementById('splits-display').textContent=this.value"/>
+                                    <span class="text-label-caps text-outline ml-2">COUNT</span>
+                                </div>
+                            </div>
+                            <div class="space-y-unit">
+                                <div class="flex justify-between items-center">
+                                    <label class="text-label-caps font-label-caps text-on-surface-variant uppercase">Min Track Duration</label>
+                                    <span id="duration-display" class="text-data-mono text-primary font-bold">20</span>
+                                </div>
+                                <div class="relative h-10 border border-outline-variant rounded bg-surface-container-lowest flex items-center px-3">
+                                    <input id="min-duration" class="w-full bg-transparent border-none focus:ring-0 text-body-base font-data-mono outline-none" type="number" value="20" min="1" max="200" oninput="document.getElementById('duration-display').textContent=this.value"/>
+                                    <span class="text-label-caps text-outline ml-2">FRAMES</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Status Area -->
+                    <div id="config-status" class="md:col-span-12 bg-surface-container-low border border-outline-variant rounded-xl p-4 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div id="config-status-icon" class="w-12 h-12 bg-surface-container text-on-surface-variant rounded-full flex items-center justify-center">
+                                <span class="material-symbols-outlined">hourglass_empty</span>
+                            </div>
+                            <div>
+                                <h4 id="config-status-title" class="font-bold text-on-surface">System Status: Awaiting Configuration</h4>
+                                <p id="config-status-desc" class="text-xs text-on-surface-variant">Please set paths and apply configuration to begin.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Action Buttons -->
+                <footer class="flex justify-end gap-gutter pt-section-gap border-t border-outline-variant">
+                    <button onclick="loadConfig()" class="px-6 h-12 border border-outline-variant text-on-surface font-semibold hover:bg-surface-container transition-all flex items-center gap-2">
+                        <span class="material-symbols-outlined">upload_file</span>
+                        Load Config
+                    </button>
+                    <button onclick="saveConfig()" class="px-6 h-12 border border-outline-variant text-on-surface font-semibold hover:bg-surface-container transition-all flex items-center gap-2">
+                        <span class="material-symbols-outlined">save</span>
+                        Save Config
+                    </button>
+                    <button onclick="applyConfig()" class="px-8 h-12 bg-primary text-on-primary font-bold hover:bg-primary-container transition-all flex items-center gap-2 shadow-sm">
+                        <span class="material-symbols-outlined">play_arrow</span>
+                        Apply Config
+                    </button>
+                </footer>
+            </div>
+
+            <!-- ==================== PIPELINE PAGE ==================== -->
+            <div id="page-pipeline" class="max-w-5xl mx-auto space-y-section-gap hidden">
+                <!-- Project Info Section -->
+                <section class="bg-surface-container-lowest border border-outline-variant p-6 rounded-lg flex flex-col md:flex-row justify-between items-center gap-gutter">
+                    <div class="flex items-center gap-6">
+                        <div class="flex flex-col">
+                            <span class="text-label-caps text-on-surface-variant mb-1 font-label-caps uppercase">Detected Locations</span>
+                            <div class="flex items-center gap-2">
+                                <span id="location-count" class="text-display-lg font-display-lg text-primary">--</span>
+                                <span id="location-status-badge" class="bg-surface-container text-on-surface-variant text-[10px] px-1.5 py-0.5 rounded font-bold uppercase">Not Scanned</span>
+                            </div>
+                        </div>
+                        <div class="h-10 w-px bg-outline-variant hidden md:block"></div>
+                        <div class="flex flex-col">
+                            <span class="text-label-caps text-on-surface-variant mb-1 font-label-caps uppercase">Target Directory</span>
+                            <span id="target-dir-display" class="text-data-mono font-data-mono bg-surface-container px-2 py-1 rounded text-primary truncate max-w-[300px]">Not configured</span>
+                        </div>
+                    </div>
+                    <button onclick="scanDataFolder()" class="flex items-center gap-2 bg-primary text-on-primary px-6 py-2.5 rounded-lg font-semibold hover:opacity-90 active:scale-95 transition-all">
+                        <span class="material-symbols-outlined">folder_open</span>
+                        <span class="font-body-base">Scan Data Folder</span>
+                    </button>
+                </section>
+
+                <!-- Pipeline Steps Section -->
+                <section class="space-y-stack-md">
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-headline-md font-headline-md text-on-surface">Pipeline Steps</h2>
+                        <div class="flex items-center gap-2 text-sm text-on-surface-variant">
+                            <span class="material-symbols-outlined text-[18px]">info</span>
+                            <span id="progress-text" class="font-body-base">Progress: 0% Total Completion</span>
+                        </div>
+                    </div>
+                    <div id="steps-container" class="space-y-3">
+                    </div>
+                </section>
+
+                <!-- Control Buttons -->
+                <footer class="flex gap-gutter pt-section-gap border-t border-outline-variant">
+                    <button onclick="runAllSteps()" class="flex items-center gap-2 bg-primary text-on-primary px-6 py-2.5 rounded-lg font-semibold hover:opacity-90 transition-all">
+                        <span class="material-symbols-outlined">play_arrow</span>
+                        Run All Steps
+                    </button>
+                    <button onclick="stopProcessing()" class="flex items-center gap-2 px-6 py-2.5 rounded-lg border border-outline-variant text-on-surface font-semibold hover:bg-surface-container transition-all">
+                        <span class="material-symbols-outlined">stop</span>
+                        Stop
+                    </button>
+                    <button onclick="resetPipeline()" class="flex items-center gap-2 px-6 py-2.5 rounded-lg border border-outline-variant text-on-surface font-semibold hover:bg-surface-container transition-all">
+                        <span class="material-symbols-outlined">refresh</span>
+                        Reset
+                    </button>
+                </footer>
+            </div>
+
+            <!-- ==================== LOG PAGE ==================== -->
+            <div id="page-log" class="max-w-5xl mx-auto space-y-section-gap hidden">
+                <header class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-display-lg font-display-lg text-on-surface">Execution Log</h1>
+                        <p class="text-body-base text-on-surface-variant mt-1">Real-time pipeline execution output and diagnostics.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="clearLog()" class="flex items-center gap-2 px-4 py-2 border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors text-sm font-semibold rounded-lg">
+                            <span class="material-symbols-outlined text-[18px]">delete_sweep</span>
+                            Clear
+                        </button>
+                        <button onclick="saveLog()" class="flex items-center gap-2 px-4 py-2 border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors text-sm font-semibold rounded-lg">
+                            <span class="material-symbols-outlined text-[18px]">save</span>
+                            Export
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Log Stats -->
+                <div class="grid grid-cols-4 gap-gutter">
+                    <div class="bg-white border border-outline-variant p-4 rounded-lg text-center">
+                        <span id="log-total" class="text-2xl font-bold text-on-surface">0</span>
+                        <p class="text-label-caps font-label-caps text-on-surface-variant uppercase mt-1">Total</p>
+                    </div>
+                    <div class="bg-white border border-outline-variant p-4 rounded-lg text-center">
+                        <span id="log-info-count" class="text-2xl font-bold text-blue-600">0</span>
+                        <p class="text-label-caps font-label-caps text-on-surface-variant uppercase mt-1">Info</p>
+                    </div>
+                    <div class="bg-white border border-outline-variant p-4 rounded-lg text-center">
+                        <span id="log-success-count" class="text-2xl font-bold text-green-600">0</span>
+                        <p class="text-label-caps font-label-caps text-on-surface-variant uppercase mt-1">Success</p>
+                    </div>
+                    <div class="bg-white border border-outline-variant p-4 rounded-lg text-center">
+                        <span id="log-error-count" class="text-2xl font-bold text-red-600">0</span>
+                        <p class="text-label-caps font-label-caps text-on-surface-variant uppercase mt-1">Errors</p>
+                    </div>
+                </div>
+
+                <!-- Filter Tabs -->
+                <div class="flex gap-2 border-b border-outline-variant pb-3">
+                    <button onclick="filterLog('all')" id="filter-all" class="px-3 py-1.5 text-sm font-semibold rounded bg-primary text-on-primary">All</button>
+                    <button onclick="filterLog('info')" id="filter-info" class="px-3 py-1.5 text-sm font-semibold rounded text-on-surface-variant hover:bg-surface-container">Info</button>
+                    <button onclick="filterLog('success')" id="filter-success" class="px-3 py-1.5 text-sm font-semibold rounded text-on-surface-variant hover:bg-surface-container">Success</button>
+                    <button onclick="filterLog('error')" id="filter-error" class="px-3 py-1.5 text-sm font-semibold rounded text-on-surface-variant hover:bg-surface-container">Error</button>
+                    <button onclick="filterLog('warning')" id="filter-warning" class="px-3 py-1.5 text-sm font-semibold rounded text-on-surface-variant hover:bg-surface-container">Warning</button>
+                </div>
+
+                <!-- Log Container -->
+                <div class="bg-white border border-outline-variant rounded-lg overflow-hidden">
+                    <div id="log-container" class="h-[calc(100vh-420px)] overflow-y-auto p-4 font-data-mono text-data-mono space-y-0.5">
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ==================== STATE ====================
+        let currentPage = 'config';
+        let logEntries = [];
+        let logCounts = { total: 0, info: 0, success: 0, error: 0, warning: 0 };
+        let currentFilter = 'all';
+        let stepStatuses = ['pending', 'pending', 'pending', 'pending', 'pending', 'pending', 'pending'];
+        let logPollInterval = null;
+
+        const STEPS = [
+            { name: 'Channel Splitting', type: 'Automated', index: 0 },
+            { name: 'Image Stabilization', type: 'Script + Manual', index: 1 },
+            { name: 'Cell Segmentation', type: 'Automated', index: 2 },
+            { name: 'TrackMate Tracking', type: 'Manual', index: 3 },
+            { name: 'Result Relocation', type: 'Automated (Optional)', index: 4 },
+            { name: 'Subtrack Analysis', type: 'Automated', index: 5 },
+            { name: 'Fluorescence Analysis', type: 'Automated', index: 6 },
+        ];
+
+        // ==================== API HELPERS ====================
+        async function api(endpoint, data = null) {
+            const opts = { headers: { 'Content-Type': 'application/json' } };
+            if (data !== null) {
+                opts.method = 'POST';
+                opts.body = JSON.stringify(data);
+            }
+            const resp = await fetch(endpoint, opts);
+            return resp.json();
+        }
+
+        // ==================== NAVIGATION ====================
+        function switchPage(page) {
+            currentPage = page;
+            document.getElementById('page-config').classList.add('hidden');
+            document.getElementById('page-pipeline').classList.add('hidden');
+            document.getElementById('page-log').classList.add('hidden');
+            document.getElementById('page-' + page).classList.remove('hidden');
+            document.querySelectorAll('nav a').forEach(a => {
+                a.className = 'flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors text-sm font-medium';
+            });
+            document.getElementById('nav-' + page).className = 'flex items-center gap-3 px-3 py-2 nav-active cursor-pointer transition-all duration-100 text-sm';
+            if (page === 'log') pollLog();
+        }
+
+        // ==================== CONFIGURATION ====================
+        async function browseFolder(target) {
+            const result = await api('/api/browse', { target });
+            if (result.success) {
+                if (target === 'input_folder') document.getElementById('input-folder').value = result.path;
+                else if (target === 'working_directory') document.getElementById('working-dir').value = result.path;
+                else if (target === 'stardist_model') document.getElementById('model-path').value = result.path;
+            }
+        }
+
+        function getConfigFromUI() {
+            return {
+                input_data_folder: document.getElementById('input-folder').value,
+                working_directory: document.getElementById('working-dir').value,
+                stardist_model_path: document.getElementById('model-path').value,
+                channel_names: [
+                    document.getElementById('channel-green').value,
+                    document.getElementById('channel-phase').value,
+                    document.getElementById('channel-red').value
+                ],
+                max_splits_allowed: parseInt(document.getElementById('max-splits').value) || 3,
+                min_track_duration_frames: parseInt(document.getElementById('min-duration').value) || 20
+            };
+        }
+
+        function setConfigToUI(config) {
+            if (config.input_data_folder) document.getElementById('input-folder').value = config.input_data_folder;
+            if (config.working_directory) document.getElementById('working-dir').value = config.working_directory;
+            if (config.stardist_model_path) document.getElementById('model-path').value = config.stardist_model_path;
+            if (config.channel_names && config.channel_names.length >= 3) {
+                document.getElementById('channel-green').value = config.channel_names[0];
+                document.getElementById('channel-phase').value = config.channel_names[1];
+                document.getElementById('channel-red').value = config.channel_names[2];
+            }
+            if (config.max_splits_allowed !== undefined) {
+                document.getElementById('max-splits').value = config.max_splits_allowed;
+                document.getElementById('splits-display').textContent = config.max_splits_allowed;
+            }
+            if (config.min_track_duration_frames !== undefined) {
+                document.getElementById('min-duration').value = config.min_track_duration_frames;
+                document.getElementById('duration-display').textContent = config.min_track_duration_frames;
+            }
+        }
+
+        async function saveConfig() {
+            const config = getConfigFromUI();
+            const result = await api('/api/config/save', config);
+            if (result.success) addLog('Configuration saved to: ' + result.path, 'success');
+            else if (result.error) addLog('Save cancelled or failed: ' + result.error, 'warning');
+        }
+
+        async function loadConfig() {
+            const result = await api('/api/config/load', {});
+            if (result.success) {
+                setConfigToUI(result.config);
+                addLog('Configuration loaded successfully', 'success');
+            } else if (result.error) {
+                addLog('Load failed: ' + result.error, 'error');
+            }
+        }
+
+        async function applyConfig() {
+            const config = getConfigFromUI();
+            const result = await api('/api/config/apply', config);
+            if (result.success) {
+                updateConfigStatus(true, 'System Status: Ready', result.message);
+                addLog('Configuration validated: ' + result.message, 'success');
+                document.getElementById('target-dir-display').textContent = config.input_data_folder || 'Not configured';
+            } else {
+                updateConfigStatus(false, 'Validation Failed', result.errors.join(', '));
+                result.errors.forEach(err => addLog('Config error: ' + err, 'error'));
+            }
+        }
+
+        function updateConfigStatus(valid, title, desc) {
+            document.getElementById('config-status-title').textContent = title;
+            document.getElementById('config-status-desc').textContent = desc;
+            const icon = document.getElementById('config-status-icon');
+            if (valid) {
+                icon.className = 'w-12 h-12 bg-secondary-container text-on-secondary-container rounded-full flex items-center justify-center';
+                icon.innerHTML = '<span class="material-symbols-outlined">check_circle</span>';
+            } else {
+                icon.className = 'w-12 h-12 bg-error-container text-on-error-container rounded-full flex items-center justify-center';
+                icon.innerHTML = '<span class="material-symbols-outlined">error</span>';
+            }
+        }
+
+        // ==================== PIPELINE ====================
+        function renderSteps() {
+            const container = document.getElementById('steps-container');
+            container.innerHTML = '';
+            STEPS.forEach((step, i) => {
+                container.innerHTML += createStepHTML(step, i, stepStatuses[i]);
+            });
+            updateProgress();
+        }
+
+        function createStepHTML(step, index, status) {
+            const num = String(index + 1).padStart(2, '0');
+            let statusHTML = '', buttonHTML = '';
+            let cardClass = 'bg-surface-container-lowest border border-outline-variant rounded-lg p-4 flex items-center justify-between step-card';
+
+            if (status === 'complete') {
+                statusHTML = `<span class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container/30 text-on-secondary-container text-xs font-bold font-label-caps"><span class="material-symbols-outlined text-[16px]" style="font-variation-settings:'FILL' 1;">check_circle</span>COMPLETE</span>`;
+                buttonHTML = `<button onclick="runStep(${index})" class="flex items-center gap-2 px-4 py-1.5 rounded border border-outline text-on-surface-variant hover:bg-surface-variant transition-colors text-sm font-semibold"><span class="material-symbols-outlined text-[18px]">replay</span>Re-run</button>`;
+            } else if (status === 'running') {
+                cardClass = 'bg-surface-container-highest border-2 border-primary-container rounded-lg p-4 flex items-center justify-between shadow-sm';
+                statusHTML = `<span class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-container text-on-primary-container text-xs font-bold font-label-caps"><span class="material-symbols-outlined animate-spin text-[16px]">sync</span>IN PROGRESS</span>`;
+                buttonHTML = `<button onclick="stopProcessing()" class="flex items-center gap-2 px-4 py-1.5 rounded text-sm font-semibold bg-slate-800 text-white"><span class="material-symbols-outlined text-[18px]">stop</span>Stop</button>`;
+            } else if (status === 'error') {
+                statusHTML = `<span class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-error-container text-on-error-container text-xs font-bold font-label-caps"><span class="material-symbols-outlined text-[16px]">error</span>FAILED</span>`;
+                buttonHTML = `<button onclick="runStep(${index})" class="flex items-center gap-2 bg-primary text-on-primary px-4 py-1.5 rounded text-sm font-semibold shadow-sm hover:opacity-90 transition-all"><span class="material-symbols-outlined text-[18px]">replay</span>Retry</button>`;
+            } else if (status === 'manual') {
+                statusHTML = `<span class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed text-xs font-bold font-label-caps"><span class="material-symbols-outlined text-[16px]">pan_tool</span>MANUAL ACTION</span>`;
+                buttonHTML = `<button onclick="verifyStep(${index})" class="flex items-center gap-2 px-4 py-1.5 rounded border border-outline text-on-surface-variant hover:bg-surface-variant transition-colors text-sm font-semibold"><span class="material-symbols-outlined text-[18px]">task_alt</span>Verify</button>`;
+            } else {
+                statusHTML = `<span class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container text-on-surface-variant text-xs font-bold font-label-caps"><span class="material-symbols-outlined text-[16px]">pending</span>PENDING</span>`;
+                buttonHTML = `<button onclick="runStep(${index})" class="flex items-center gap-2 bg-primary text-on-primary px-4 py-1.5 rounded text-sm font-semibold shadow-sm hover:opacity-90 transition-all"><span class="material-symbols-outlined text-[18px]">play_arrow</span>Run</button>`;
+            }
+
+            const numClass = status === 'running' ? 'w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold font-data-mono'
+                : status === 'complete' ? 'w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold font-data-mono'
+                : 'w-8 h-8 rounded-full border border-outline-variant text-on-surface-variant flex items-center justify-center font-bold font-data-mono';
+
+            return `<div class="${cardClass}"><div class="flex items-center gap-6"><span class="${numClass}">${num}</span><div><h3 class="font-bold text-on-surface font-body-base">${step.name}</h3><p class="text-xs text-on-surface-variant font-body-base">Type: ${step.type}</p></div></div><div class="flex items-center gap-4">${statusHTML}${buttonHTML}</div></div>`;
+        }
+
+        function updateProgress() {
+            const completed = stepStatuses.filter(s => s === 'complete').length;
+            const pct = Math.round((completed / STEPS.length) * 100);
+            document.getElementById('progress-text').textContent = `Progress: ${pct}% Total Completion`;
+        }
+
+        async function scanDataFolder() {
+            addLog('Scanning data folder...', 'info');
+            const result = await api('/api/scan', {});
+            if (result.success) {
+                document.getElementById('location-count').textContent = result.count;
+                document.getElementById('location-status-badge').textContent = 'Ready';
+                document.getElementById('location-status-badge').className = 'bg-secondary-container text-on-secondary-container text-[10px] px-1.5 py-0.5 rounded font-bold uppercase';
+                addLog(`Found ${result.count} locations`, 'success');
+                if (result.samples) result.samples.forEach(s => addLog('  ' + s, 'info'));
+            } else {
+                addLog('Scan failed: ' + result.error, 'error');
+            }
+        }
+
+        async function runStep(index) {
+            stepStatuses[index] = 'running';
+            renderSteps();
+            addLog(`[Step ${index + 1}] Starting: ${STEPS[index].name}...`, 'info');
+            const result = await api('/api/step/run', { index });
+            if (result.status === 'success') {
+                stepStatuses[index] = 'complete';
+                addLog(`[Step ${index + 1}] Complete: ${result.message}`, 'success');
+            } else if (result.status === 'manual') {
+                stepStatuses[index] = 'manual';
+                addLog(`[Step ${index + 1}] Awaiting manual action: ${result.message}`, 'warning');
+            } else {
+                stepStatuses[index] = 'error';
+                addLog(`[Step ${index + 1}] Failed: ${result.message}`, 'error');
+            }
+            renderSteps();
+            await pollLog();
+        }
+
+        async function verifyStep(index) {
+            addLog(`[Step ${index + 1}] Verifying...`, 'info');
+            const result = await api('/api/step/verify', { index });
+            if (result.success) {
+                stepStatuses[index] = 'complete';
+                addLog(`[Step ${index + 1}] Verification passed: ${result.message}`, 'success');
+            } else {
+                addLog(`[Step ${index + 1}] Verification issues: ${result.message}`, 'warning');
+                if (result.continue_anyway) stepStatuses[index] = 'complete';
+            }
+            renderSteps();
+        }
+
+        async function runAllSteps() {
+            addLog('Starting sequential pipeline execution...', 'info');
+            for (let i = 0; i < STEPS.length; i++) {
+                if (stepStatuses[i] === 'complete') continue;
+                await runStep(i);
+                if (stepStatuses[i] === 'manual') {
+                    addLog('Pipeline paused: manual step requires verification.', 'warning');
+                    break;
+                }
+                if (stepStatuses[i] === 'error') {
+                    addLog('Pipeline stopped due to error.', 'error');
+                    break;
+                }
+            }
+        }
+
+        async function stopProcessing() {
+            await api('/api/stop', {});
+            addLog('Processing stop requested', 'warning');
+        }
+
+        function resetPipeline() {
+            stepStatuses = ['pending', 'pending', 'pending', 'pending', 'pending', 'pending', 'pending'];
+            renderSteps();
+            addLog('Pipeline reset', 'info');
+        }
+
+        // ==================== LOG ====================
+        function addLog(message, level = 'info') {
+            const now = new Date();
+            const time = now.toTimeString().split(' ')[0];
+            const entry = { time, message, level };
+            logEntries.push(entry);
+            logCounts.total++;
+            logCounts[level] = (logCounts[level] || 0) + 1;
+            updateLogStats();
+            renderLogEntry(entry);
+            const badge = document.getElementById('log-badge');
+            badge.textContent = logCounts.total;
+            badge.classList.remove('hidden');
+        }
+
+        function renderLogEntry(entry) {
+            if (currentFilter !== 'all' && entry.level !== currentFilter) return;
+            const container = document.getElementById('log-container');
+            const levelClass = 'log-' + entry.level;
+            const levelColors = { info: 'text-blue-600', success: 'text-green-600', error: 'text-red-600', warning: 'text-amber-600' };
+            const div = document.createElement('div');
+            div.className = `log-entry ${levelClass}`;
+            div.setAttribute('data-level', entry.level);
+            div.innerHTML = `<span class="text-slate-400 mr-2">[${entry.time}]</span><span class="${levelColors[entry.level] || 'text-slate-600'} font-bold mr-2">${entry.level.toUpperCase()}</span><span>${escapeHtml(entry.message)}</span>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function pollLog() {
+            try {
+                const serverLogs = await api('/api/log');
+                if (serverLogs && serverLogs.length > logEntries.length) {
+                    const newEntries = serverLogs.slice(logEntries.length);
+                    newEntries.forEach(entry => {
+                        logEntries.push(entry);
+                        logCounts.total++;
+                        logCounts[entry.level] = (logCounts[entry.level] || 0) + 1;
+                        renderLogEntry(entry);
+                    });
+                    updateLogStats();
+                    const badge = document.getElementById('log-badge');
+                    badge.textContent = logCounts.total;
+                    badge.classList.remove('hidden');
+                }
+            } catch(e) {}
+        }
+
+        function filterLog(level) {
+            currentFilter = level;
+            ['all', 'info', 'success', 'error', 'warning'].forEach(f => {
+                const btn = document.getElementById('filter-' + f);
+                btn.className = f === level
+                    ? 'px-3 py-1.5 text-sm font-semibold rounded bg-primary text-on-primary'
+                    : 'px-3 py-1.5 text-sm font-semibold rounded text-on-surface-variant hover:bg-surface-container';
+            });
+            const container = document.getElementById('log-container');
+            container.innerHTML = '';
+            logEntries.forEach(entry => {
+                if (level === 'all' || entry.level === level) renderLogEntry(entry);
+            });
+        }
+
+        function updateLogStats() {
+            document.getElementById('log-total').textContent = logCounts.total;
+            document.getElementById('log-info-count').textContent = logCounts.info || 0;
+            document.getElementById('log-success-count').textContent = logCounts.success || 0;
+            document.getElementById('log-error-count').textContent = logCounts.error || 0;
+        }
+
+        function clearLog() {
+            logEntries = [];
+            logCounts = { total: 0, info: 0, success: 0, error: 0, warning: 0 };
+            document.getElementById('log-container').innerHTML = '';
+            updateLogStats();
+            document.getElementById('log-badge').classList.add('hidden');
+        }
+
+        async function saveLog() {
+            const text = logEntries.map(e => `[${e.time}] ${e.level.toUpperCase()} ${e.message}`).join('\n');
+            await api('/api/log/save', { text });
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ==================== MISC ====================
+        async function openDocumentation() {
+            await api('/api/documentation', {});
+        }
+
+        async function shutdownServer() {
+            if (confirm('Quit CellTracker Pro?')) {
+                await api('/api/shutdown', {});
+                document.body.innerHTML = '<div class="flex items-center justify-center h-screen"><div class="text-center"><h1 class="text-2xl font-bold text-slate-600 mb-2">CellTracker Pro</h1><p class="text-slate-400">Application closed. You can close this tab.</p></div></div>';
+            }
+        }
+
+        // ==================== INIT ====================
+        (async function init() {
+            renderSteps();
+            try {
+                const config = await fetch('/api/config/default').then(r => r.json());
+                if (config && config.input_data_folder) {
+                    setConfigToUI(config);
+                    addLog('Default configuration loaded', 'info');
+                } else {
+                    addLog('CellTracker Pro initialized. Ready for configuration.', 'info');
+                }
+            } catch(e) {
+                addLog('CellTracker Pro initialized. Ready for configuration.', 'info');
+            }
+
+            // Poll for server-side logs periodically
+            logPollInterval = setInterval(pollLog, 3000);
+        })();
+    </script>
+</body>
+</html>
