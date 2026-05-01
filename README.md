@@ -1,40 +1,17 @@
-# Lammerding Lab - Cell Tracking Support
+# Lammerding Lab — Cell Tracking Support
 
 **Computational Pipeline for Multi-Channel Cell Tracking Analysis**
 
-**Version**: 2.0
-**Date**: February 13, 2026
-**Author**: Oriana Chen
-**Contact**: Lammerding Lab
+**Version**: 2.1
+**Last Update Date**: May 1st, 2026
+**Author**: Oriana (Sihe) Chen
+**Lab**: Cornell University Lammerding Lab
 
 ---
 
 ## Overview
 
-This computational pipeline provides an integrated workflow for processing multi-channel fluorescence microscopy time-lapse data, from raw image sequences through complete cell lineage and motility analysis. The pipeline combines automated Python scripts with guided Fiji/ImageJ processing steps to handle irregular cell morphologies, track nuclear envelope rupture events via fluorescence intensity ratios, and extract quantitative motility metrics from cell division lineages.
-
-### Purpose
-
-To automate the analysis of cancer cell migration and nuclear envelope integrity by:
-
-- Stabilizing multi-channel time-lapse microscopy images
-- Segmenting irregularly-shaped cancer cell nuclei using deep learning (StarDist)
-- Tracking cells across time using TrackMate
-- Extracting Red/Green fluorescence intensity ratios to monitor nuclear envelope rupture
-- Analyzing cell division events and generating subtrack lineages with quality control
-- Computing motility metrics (speed, linearity, directional change) for each cell lineage
-
-### Key Features
-
-- **🖥️ Graphical User Interface**: Modern GUI for configuration, execution monitoring, and logging
-- **Auto-Generated Scripts**: Pipeline automatically generates customized ImageJ macros and TrackMate guides based on your data structure—no manual path editing required
-- **Batch Processing**: Handles multiple experimental replicates, timepoints, and conditions simultaneously
-- **Quality Control**: Built-in filtering for division events and track duration
-- **Restartable Workflow**: Resume from any step; already-processed data is automatically detected
-- **Smart Verification**: Automatic validation after manual steps with visual feedback
-- **Modular Design**: Can run individual steps or complete end-to-end pipeline
-
----
+This pipeline provides an integrated, GUI-driven workflow for processing multi-channel fluorescence microscopy time-lapse data. It spans the full analysis chain: channel splitting, image stabilization, deep-learning-based nuclear segmentation (StarDist), cell tracking (TrackMate), subtrack lineage decomposition, and Red/Green fluorescence intensity extraction for nuclear envelope rupture analysis.
 
 ---
 
@@ -53,822 +30,434 @@ To automate the analysis of cancer cell migration and nuclear envelope integrity
    - [Step 5: Fluorescence Intensity Analysis](#step-5-fluorescence-intensity-analysis)
    - [Step 6: Subtrack Lineage Analysis](#step-6-subtrack-lineage-analysis)
 6. [Output File Reference](#output-file-reference)
-7. [Troubleshooting &amp; Optimization](#troubleshooting--optimization)
-8. [Timing &amp; Performance](#timing--performance)
-9. [Quality Control Guidelines](#quality-control-guidelines)
-10. [References](#references)
+7. [Troubleshooting](#troubleshooting)
+8. [References](#references)
 
 ---
 
 ## System Requirements
 
-### Software Dependencies
+**Software**
 
-- **Python**: 3.8 or higher
-- **Fiji/ImageJ**: Latest version with required plugins
-  - Image Stabilizer plugin
-  - TrackMate plugin (included in Fiji)
-- **Operating System**: Windows 10/11, macOS, or Linux
+- Python 3.8 or higher (3.9 recommended)
+- Fiji/ImageJ with the following plugins:
+  - Image Stabilizer (Plugins → Registration → Image Stabilizer)
+  - TrackMate (Plugins → Tracking → TrackMate; included with Fiji)
+- Windows 10/11, macOS, or Linux
 
-### Python Packages
+**Python Packages** — installed automatically via `Install_Dependencies.bat` (see [Installation](#installation)):
 
-All required packages are listed in `requirements.txt`:
+`numpy`, `pandas`, `scipy`, `scikit-image`, `tensorflow`, `stardist`, `csbdeep`, `tifffile`, `tqdm`, `openpyxl`
 
-- numpy
-- pandas
-- scipy
-- scikit-image
-- tensorflow (for StarDist)
-- stardist
-- csbdeep
-- tifffile
-- tqdm
+**Hardware**
 
-### Hardware Recommendations
-
-- **RAM**: Minimum 8 GB, recommended 16 GB or more
-- **Storage**: 2-3x the size of your raw data (for intermediate and final outputs)
-- **GPU**: Optional but recommended for segmentation (CUDA-compatible GPU accelerates StarDist by ~5-10x)
-- **Processor**: Multi-core CPU recommended for batch processing
-
-### Conda Environment (Recommended)
-
-Creating a dedicated conda environment ensures package compatibility:
-
-```bash
-conda create -n celltrack python=3.9
-conda activate celltrack
-```
+| Component | Minimum              | Recommended                                     |
+| --------- | -------------------- | ----------------------------------------------- |
+| RAM       | 8 GB                 | 16 GB+                                          |
+| Storage   | 2–3× raw data size | —                                              |
+| GPU       | —                   | CUDA-compatible (accelerates StarDist ~5–10×) |
+| CPU       | —                   | Multi-core (batch processing)                   |
 
 ---
 
 ## Installation
 
-### Step 1: Clone or Download Repository
+### Step 1: Set Up a Python Environment
 
-```bash
-cd "C:\Tracking Data"
-# If using git:
-git clone <repository_url> Updated_Pipeline_Resource_Package
-cd Updated_Pipeline_Resource_Package
-```
+Run **`Install_Dependencies.bat`** and follow the interactive prompts:
 
-### Step 2: Install Python Dependencies
+1. **Choose environment type**:
 
-**Option A: Automatic Installation (Windows)**
+   - **conda** — recommended if you have Miniconda or Anaconda installed. Downloads from https://docs.conda.io/en/latest/miniconda.html
+   - **venv** — uses Python's built-in virtual environment; requires Python 3.8+ already on your system (https://www.python.org/downloads/)
+2. **Enter a name** for your environment (e.g. `celltrack`).
+3. The script will automatically create the environment with Python 3.9 and install all required packages from `requirements.txt`.
+4. On completion, the terminal will display the activation command for your environment — **note it down**:
 
-Double-click `Install_Dependencies.bat` (Install_Dependencies.bat)
+   ```
+   # conda:
+   conda activate celltrack
 
-**Option B: Manual Installation**
+   # venv:
+   C:\path\to\celltrack_env\Scripts\activate
+   ```
 
-```bash
-# Activate your conda environment (if using conda)
-conda activate celltrack
+If any errors occur during setup, refer to the troubleshooting table at the end of this document or check package compatibility in `requirements.txt`.
 
-# Install dependencies
-pip install -r requirements.txt
-```
+> **Every time you open a new terminal to run CellTracker Pro, you must activate your environment first** before double-clicking `CellTracker_Pro.bat`
 
-### Step 3: Verify Fiji Installation
+### Step 2: Verify Fiji Plugins
 
-1. Download Fiji from https://fiji.sc if not already installed
-2. Launch Fiji
-3. Verify plugins:
-
+1. Download and install Fiji from https://fiji.sc if not already present.
+2. Launch Fiji and confirm the following are accessible:
    - **Image Stabilizer**: Plugins → Registration → Image Stabilizer
    - **TrackMate**: Plugins → Tracking → TrackMate
 
-   `<<<<Macro Installation Instruction Update I Progress>`>>>
+### Step 3: Prepare StarDist Model
 
-### Step 4: Prepare StarDist Model
+**Option A — Use the pre-trained model** included in the package (`StarDist_Cont_Grey_4_200_128_2_0.0003_Aug4_150epoch/`) or StarDist pacakes downloaded from other source. Note the folder path for use in configuration.
 
-**Option A: Use Pre-trained Model**
+**Option B — Train a custom model** for your specific cell type using [ZeroCostDL4Mic](https://github.com/HenriquesLab/ZeroCostDL4Mic/wiki). Reference training parameters for nuclear segmentation:
 
-If you have a pre-trained model, note its directory path (e.g., `StarDist_Cont_Grey_4_200_128_2_0.0003_Aug4_150epoch/`)
-
-**Option B: Train Your Own Model**
-
-Training a custom segmentation model is recommended for optimal performance on your specific cell type. Use **ZeroCostDL4Mic**:
-
-1. Access: https://github.com/HenriquesLab/ZeroCostDL4Mic/wiki
-2. Follow StarDist training notebook
-3. **Reference Training Parameters** (for nuclear segmentation):
-   - **Training Data**: 50 pairs of Mask/Fluorescence images
-     - Annotation masks created using StarDist Fiji macro + manual correction
-     - Validation split: 10%
-     - Augmentation: 4X
-   - **Model Parameters**:
-     - Patch size: 128
-     - Batch size: 4
-     - Epochs: 150
-     - Learning rate: 0.0003
-     - Steps/epoch: 200
-4. Download trained model folder to your local directory
+Download the trained model folder and note its path.
 
 ---
 
 ## Input Data Structure
 
-Your raw microscopy data must follow this hierarchical structure:
+Raw microscopy data must follow this hierarchy:
 
 ```
 Input_Data_Folder/
-├── Rep 1/                          # Biological replicate 1
-│   ├── 0-24h/                      # Timepoint
-│   │   ├── Dense/                  # Experimental condition
-│   │   │   ├── B1_2/               # Location (field of view)
-│   │   │   │   ├── B1_2_0001.tif   # Multi-channel time-lapse stack
-│   │   │   │   ├── B1_2_0002.tif
+├── Rep 1/                       # Biological replicate
+│   ├── 0-24h/                   # Timepoint
+│   │   ├── Dense/               # Experimental condition
+│   │   │   ├── B1_2/            # Location (field of view)
+│   │   │   │   ├── B1_2_0001.tif
 │   │   │   │   └── ...
-│   │   │   ├── B1_3/
-│   │   │   └── ...
+│   │   │   └── B1_3/
 │   │   ├── 5um/
 │   │   └── 10um/
-│   ├── 24-48h/
-│   ├── 48-72h/
-│   └── 72-96h/
+│   └── 24-48h/
 ├── Rep 3/
 └── Rep 4/
 ```
 
-### Requirements
+**Requirements**
 
-- **File format**: TIFF (.tif) multi-channel stacks
-- **Channels**: 3 channels (default: Green, Phase, Red)
-  - Modify channel names in configuration if different
-- **Naming**: Consistent location names within each condition folder
-- **Structure**: Must maintain Replicate → Timepoint → Condition → Location hierarchy
+- Format: TIFF (`.tif`) multi-channel stacks
+- Default channel order: Green, Phase, Red (configurable)
+- Consistent location names within each condition folder
+- Hierarchy: **Replicate → Timepoint → Condition → Location**
 
 ---
 
 ## Pipeline Configuration
 
-### Method 1: Graphical Interface (Recommended) 🖥️
+### Launch the GUI
 
-**Launch GUI:**
+1. Activate your Python environment (created during Installation):
+   ```
+   # conda:
+   conda activate <env_name>
 
-```bash
-# Option A: Use batch file (Windows)
-Double-click "GUI_init.bat"
+   # venv:
+   <env_folder>\Scripts\activate
+   ```
+2. Double-click **`CellTracker_Pro.bat`**. The launcher verifies your environment and opens the GUI in your browser automatically.
 
-# Option B: Run Python directly
-python main.py
-```
+If the launcher reports missing packages, re-run `Install_Dependencies.bat` with your environment activated, or refer to the [Troubleshooting](#troubleshooting) section.
 
-**Configuration Steps:**
+### Configure Settings
 
-1. **⚙️ Configuration Tab**:
+1. Open the **⚙️ Configuration** tab.
+2. Fill in the required paths:
+   - **Input Data Folder**: Root folder containing your replicates
+   - **Working Directory**: Folder where intermediate and output files will be saved
+   - **StarDist Model Path**: Path to your model folder
+   - **Channel Names**: Adjust if different from the default (Green, Phase, Red)
+3. Set QC parameters (defaults are suitable for most datasets):
+   - **Max Splits Allowed**: 3 — removes tracks with excessive division events
+   - **Min Track Duration**: 20 frames — removes short-lived tracks
+4. Click **"Save Config"** then **"Apply Config"** to validate paths and create output directories.
 
-   - **Input Data Folder**: Browse to your `Input_Data_Folder/` root
-   - **Working Directory**: Choose where processed data will be saved
-   - **StarDist Model Path**: Browse to your trained model folder
-   - **Channel Names**: Verify or modify (default: Green, Phase, Red)
-   - **QC Parameters**:
-     - Max Splits Allowed: 3 (filters tracks with excessive divisions)
-     - Min Track Duration: 20 frames (filters short-lived tracks)
-   - Click **"Save Config"** to save configuration as JSON
-   - Click **"Apply Config"** to validate paths and create directories
-2. **▶️ Pipeline Tab**:
+### Scan Data
 
-   - Click **"🔍 Scan Data Folder"** to detect all locations
-   - Verify detected location count
-   - Execute steps sequentially using **"▶️ Run"** buttons
-   - Monitor progress in real-time
-3. **📋 Log Tab**:
+Switch to the **▶️ Pipeline** tab and click **"🔍 Scan Data Folder"**. Verify that the detected location count matches your dataset before proceeding.
 
-   - View processing logs
-   - Save logs for documentation
-
-### Method 2: Manual Configuration File
-
-Create `pipeline_config.json` in working directory:
-
-```json
-{
-  "input_data_folder": "C:\\Tracking Data\\Test_Data_Folder",
-  "working_directory": "C:\\Tracking Data\\Working",
-  "stardist_model_path": "C:\\Models\\StarDist_Cont_Grey_4_200_128_2_0.0003_Aug4_150epoch",
-  "channel_names": ["Green", "Phase", "Red"],
-  "max_splits_allowed": 3,
-  "min_track_duration_frames": 20,
-  "input_mask_folder": "InputMask",
-  "output_tracks_folder": "OutputTracks"
-}
-```
+> Logs from all operations are available in the **📋 Log** tab and can be saved for documentation.
 
 ---
 
-## Protocol: Data Processing Workflow
+## Data Processing Workflow
+
+Steps are executed sequentially via the **▶️ Pipeline** tab. Click **"▶️ Run"** for each step in order. Steps 2 and 4 involve a manual Fiji stage followed by a GUI verification step.
+
+---
 
 ### Step 1: Channel Splitting
 
-**Purpose**: Separate multi-channel TIFF stacks into individual channel folders for downstream processing.
+**Purpose**: Separate multi-channel TIFF frames into individual per-channel subfolders.
 
-**Method**: Automated (Python)
+**In the GUI**: Click **"▶️ Run"** for Step 1.
 
-**Procedure**:
+The pipeline scans all locations and splits each multi-channel TIFF into:
 
-1. Launch GUI or run:
+- `LocationName_Green/`
+- `LocationName_Phase/`
+- `LocationName_Red/`
 
-   ```bash
-   python src/channel_splitter.py
-   ```
-2. Pipeline will:
+Already-processed locations are skipped automatically.
 
-   - Scan all locations in input data folder
-   - For each location, extract frames from multi-channel TIFFs
-   - Save each channel to separate folder:
-     - `LocationName_Green/`
-     - `LocationName_Phase/`
-     - `LocationName_Red/`
-3. Progress displayed in GUI log or console
-
-**Expected Output**:
+**Expected output** (per location):
 
 ```
-Input_Data_Folder/Rep1/0-24h/Dense/B1_2/
-├── B1_2_Green/
-│   ├── B1_2_Green_0001.tif
-│   ├── B1_2_Green_0002.tif
-│   └── ...
+B1_2/
+├── B1_2_Green/   ← individual frame TIFFs
 ├── B1_2_Phase/
-│   └── ...
 └── B1_2_Red/
-    └── ...
 ```
 
-**Timing**: ~2-5 seconds per location (depends on stack size)
-
-**Note**: Already-processed locations are automatically skipped on re-run.
+> **Note**: This step is optional if your data is already organized into separate channel folders.
 
 ---
 
 ### Step 2: Image Stabilization
 
-**Purpose**: Correct for stage drift and sample movement during time-lapse acquisition to enable accurate tracking.
+**Purpose**: Correct stage drift across time-lapse frames using the Lucas-Kanade affine algorithm. All three channels are stabilized with an identical geometric correction, which is required for accurate cross-channel fluorescence extraction.
 
-**Method**: Semi-Automated (Pipeline generates ImageJ macro → Manual execution in Fiji)
+**Part A — Generate macro (GUI)**
 
-**Algorithm**: Lucas-Kanade algorithm with affine transformation, pyramid level 3, no template update
+Click **"▶️ Run"** for Step 2. The pipeline generates `image_stabilization_macro.ijm` in your Working Directory, pre-configured with your data paths.
 
-**Procedure**:
+**Part B — Execute in Fiji**
 
-#### Part A: Generate Stabilization Macro
+1. Open Fiji.
+2. Navigate to **Plugins → Scripts → Script Interpreter**.
+3. Set language to **ImageJ Macro**.
+4. Open the generated `image_stabilization_macro.ijm` file and click **Run**.
+5. Monitor progress in the Fiji console. Already-stabilized locations are skipped automatically.
 
-1. **In Pipeline GUI**: Click **"▶️ Run"** for Step 2
+**Part C — Verify (GUI)**
 
-   - Pipeline scans your data structure
-   - Auto-generates `image_stabilization_macro.ijm` in working directory
-   - Macro is customized with your specific:
-     - Root path
-     - Replicate names
-     - Timepoint names
-     - Condition types
-2. **Macro Logic**:
+Return to the GUI and click **"✓ Verify Results"**. The pipeline checks all locations and reports completion status (X/X locations).
 
-   - Opens three independent channels as image sequences
-   - Merges as combined RGB
-   - Applies Image Stabilizer plugin
-   - Splits channels and saves with suffixes:
-     - `*_Red_Stabilized.tif`
-     - `*_Green_Stabilized.tif`
-     - `*_Phase_Stabilized.tif`
-
-#### Part B: Execute in Fiji
-
-3. **Open Fiji**
-4. **Run Generated Macro**:
-
-   - Plugins → Scripts → Script Interpreter
-   - Paste the content from  `image_stabilization_macro.ijm` into the script box, remember to switch language to ImageJ Macro
-   - Click Open
-5. **Monitor Progress**:
-
-   - Fiji console shows progress for each location
-   - Messages: "▶ Processing: [location]", "✅ Done: [location]"
-   - Already-stabilized locations are skipped automatically
-6. **Verify in Pipeline**:
-
-   - Return to GUI
-   - Click **"✓ Verify Results"** button in dialog
-   - Pipeline checks all locations for stabilized files
-   - Shows verification status: X/X locations complete
-
-**Expected Output**:
+**Expected output** (per location):
 
 ```
-Input_Data_Folder/Rep1/0-24h/Dense/B1_2/
-├── B1_2_Red_Stabilized.tif    # Grayscale, stabilized
-├── B1_2_Green_Stabilized.tif  # Grayscale, stabilized
-├── B1_2_Phase_Stabilized.tif  # Grayscale, stabilized
-├── B1_2_Green/ (from Step 1)
-└── ...
+B1_2/
+├── B1_2_Red_Stabilized.tif
+├── B1_2_Green_Stabilized.tif
+└── B1_2_Phase_Stabilized.tif
 ```
-
-**Timing**: ~30-60 seconds per location (depends on stack size and frame count)
-
-**Critical Notes**:
-
-- Output files are in **grayscale** format, ready for segmentation
-- Macro is restartable—already-processed locations are automatically skipped
-- No manual path editing required
 
 ---
 
 ### Step 3: Segmentation using StarDist
 
-**Purpose**: Segment irregularly-shaped cancer cell nuclei using a trained StarDist 2D deep learning model.
+**Purpose**: Generate integer-labeled nuclear masks from stabilized images using a trained StarDist 2D model. Each nucleus receives a unique label per frame; output masks are 16-bit grayscale TIFF stacks compatible with TrackMate's Label Image Detector.
 
-**Method**: Automated (Python with TensorFlow/StarDist)
+**In the GUI**: Click **"▶️ Run"** for Step 3.
 
-**Preparation**:
+Verify that the correct StarDist model path is set in the Configuration tab before running. GPU acceleration is used automatically if available.
 
-Ensure conda environment is activated:
-
-```bash
-conda activate celltrack
-```
-
-**Procedure**:
-
-1. **Verify Model Path**: Ensure StarDist model path is correctly set in configuration
-2. **Run Segmentation**:
-
-   - **GUI**: Click **"▶️ Run"** for Step 3
-   - **CLI**:
-     ```bash
-     python src/segmentation.py
-     ```
-3. **Pipeline will**:
-
-   - Load StarDist model
-   - For each location:
-     - Load `*_Red_Stabilized.tif` (nuclei channel)
-     - Apply model frame-by-frame
-     - Generate labeled mask (each nucleus = unique integer label)
-     - Save as `Rep-X_Time_Condition_Location_Red_Seg.tif`
-   - Save all masks to `Working_Directory/InputMask/` folder
-4. **GPU Acceleration**: If available, segmentation automatically uses GPU
-
-**Expected Output**:
+**Expected output**:
 
 ```
-Working_Directory/
-└── InputMask/
-    ├── Rep-1_0-24h_Dense_B1_2_Red_Seg.tif
-    ├── Rep-1_0-24h_Dense_B1_3_Red_Seg.tif
-    ├── Rep-1_0-24h_5um_B2_1_Red_Seg.tif
-    └── ...
+Working_Directory/InputMask/
+├── Rep-1_0-24h_Dense_B1_2_Red_Seg.tif
+├── Rep-1_0-24h_Dense_B1_3_Red_Seg.tif
+└── ...
 ```
 
-**Timing**: ~30-60 seconds per frame per location (highly dependent on GPU availability)
-
-**Segmentation Output Format**:
-
-- TIFF stack, same dimensions as input
-- Integer-labeled (0 = background, 1 = first nucleus, 2 = second nucleus, etc.)
-- Grayscale 16-bit
-- Ready for TrackMate Label Image Detector
-
-**Note**: This is typically the most time-intensive step. Monitor progress in GUI log.
+> This is typically the most time-intensive step. Monitor progress in the GUI Log tab.
 
 ---
 
 ### Step 4: Tracking using TrackMate
 
-**Purpose**: Reconstruct time-resolved cell trajectories based on segmented nuclei masks.
+**Purpose**: Reconstruct cell trajectories across time from segmentation masks.
 
-**Method**: Semi-Automated (Pipeline generates guide → Manual execution in Fiji TrackMate)
+Step 4 supports two workflows. Both require manual operation in Fiji; the GUI generates the necessary guide and verifies the results.
 
-**Procedure**:
-
-#### Option 1 - Manual Processing via GUI
-
-2. **For each location**:
-
-   a. **Open Mask in Fiji**:
-
-   - File → Open → Select `*_Red_Seg.tif` from `InputMask/`
-
-   b. **Launch TrackMate**:
-
-   - Plugins → Tracking → TrackMate
-   - Click "Next"
-
-   c. **Check Dimensions**:
-
-   - Accept auto-detected dimensionality
-   - If prompted, swap Z/T so time is assigned as T (not Z)
-   - Click "Next"
-
-   d. **Configure Detector**:
-
-   - Select: **"Label image detector"**
-   - **Simplify contours**: Enabled
-   - Click "Next" → Click "Detect"
-   - Verify spots overlay on nuclei
-
-   e. **Initial Filtering** (Optional):
-
-   - Can skip or add filters (e.g., Quality > 0)
-   - Click "Next"
-
-   f. **Configure Tracker**:
-
-   - Select: **"LAP Tracker"**
-   - **Frame-to-frame linking**:
-     - Max distance: 10-20 pixels (adjust based on cell speed)
-   - **Track segment gap closing**:
-     - Max distance: 20 pixels
-     - Max frame gap: 2
-   - **Track segment splitting** (enable if observing mitosis):
-     - Max distance: 10 pixels
-   - **Track segment merging**: DISABLE (not biologically relevant)
-   - Click "Next"
-
-   g. **Filter Tracks** (Recommended):
-
-   - Add filter: "Track duration" > 5 frames
-   - Removes short-lived spurious tracks
-   - Click "Next"
-
-   h. **Display Options**:
-
-   - Skip display configuration
-   - Click "Next"
-
-   i. **Export Results**:
-
-   - Actions: **"Export tracks to CSV"**
-   - **IMPORTANT**: Export to location folder:
-     - Create subfolder: `[location]/Tracking Result/`
-     - Save with exact naming format:
-       - `Rep-X_Time_Condition_Location_Red_Seg-spots.csv`
-       - `Rep-X_Time_Condition_Location_Red_Seg-edges.csv`
-       - `Rep-X_Time_Condition_Location_Red_Seg-tracks.csv`
-   - See generated guide for exact names
-
-   j. **Optional**: Save TrackMate session (.xml) for future reference
-3. **Repeat** for all locations listed in generated guide
-
-#### Option 2 - Batch Processing via TrackMate Batcher
-
-4. **Configure Batch Processing**:
-
-   a. **Open TrackMate Batcher**:
-
-   - Plugins → Tracking → TrackMate Batcher
-
-   b. **Specify Input/Output**:
-
-   - **Input folder**: `Working_Directory/InputMask/`
-   - **Output folder**: `Working_Directory/OutputTracks/`
-   - **Session file**: Browse for `.xml` template
-     - Use example session file from resources package
-     - Or save one from manual processing (Option 1)
-
-   c. **Select Outputs**:
-
-   - ✓ Spots CSV
-   - ✓ Edges CSV
-   - ✓ Tracks CSV
-   - ✗ **Uncheck** "The 3 Tables (xlsx)"
-     - Known compatibility issue with latest Fiji
-
-   d. **Run Batch**:
-
-   - Click "Run"
-   - Monitor progress in console
-   - Errors for individual files will be logged but batch continues
-5. **Proceed to Step 4.5** to relocalize results to location folders
-
-#### Part D: Verify Tracking Results
-
-6. **In Pipeline GUI**:
-   - Click **"✓ Verify Results"** in verification dialog
-   - Pipeline checks each location for required CSV files
-   - Shows status: X/X locations complete
-
-**Expected Output**:
-
-```
-Input_Data_Folder/Rep1/0-24h/Dense/B1_2/
-└── Tracking Result/
-    ├── Rep-1_0-24h_Dense_B1_2_Red_Seg-spots.csv
-    ├── Rep-1_0-24h_Dense_B1_2_Red_Seg-edges.csv
-    ├── Rep-1_0-24h_Dense_B1_2_Red_Seg-tracks.csv
-    └── (optional) Rep-1_0-24h_Dense_B1_2_Red_Seg.xml
-```
-
-**TrackMate Output File Descriptions**:
-
-| File               | Content                                                           | Usage                              |
-| ------------------ | ----------------------------------------------------------------- | ---------------------------------- |
-| `*-spots.csv`    | Spot-level data (position, intensity, quality for each timepoint) | Intensity analysis                 |
-| `*-edges.csv`    | Connectivity between spots (links between timepoints)             | Reconstructing tracks              |
-| `*-tracks.csv`   | Summary statistics for each track (speed, displacement, etc.)     | Motility metrics, lineage analysis |
-| `*all-spots.csv` | All spots including unlinked detections (optional)                | Debugging                          |
-| `*.xml`          | TrackMate session file with full metadata (optional)              | Reproducibility                    |
-
-**Timing**:
-
-- Manual: ~5-10 minutes per location (first-time setup)
-- Batch: ~1-2 minutes per location (after initial template creation)
-
-**Critical Notes**:
-
-- **File naming must be exact** for downstream pipeline steps
-- Refer to auto-generated guide for location-specific names
-- Can process in batches—pipeline detects completed locations automatically
+**In the GUI**: Click **"▶️ Run"** for Step 4 to generate `TrackMate_Operation_Guide.txt` in your Working Directory with location-specific file names and export paths.
 
 ---
 
-### Step 4.5: Results Relocalization
+#### Option A — Manual Tracking (per location)
 
-**Purpose**: If using TrackMate Batcher, relocalize output files from centralized `OutputTracks/` folder back to individual location folders.
+For each location listed in the generated guide:
 
-**Method**: Automated (Python)
+1. **Open Fiji** → File → Open → select `*_Red_Seg.tif` from `InputMask/`.
+2. **Launch TrackMate**: Plugins → Tracking → TrackMate → click **Next**.
+3. **Check dimensions**: If prompted, ensure time is assigned as **T** (not Z) → click **Next**.
+4. **Configure Detector**:
+   - Select **Label Image Detector**
+   - Enable **Simplify Contours**
+   - Click **Next** → **Detect** and verify spot overlay.
+5. **Configure Tracker** (LAP Tracker):
+   - Frame-to-frame linking max distance: 10–20 px
+   - Gap closing: max distance 20 px, max frame gap 2
+   - Track splitting: enable if observing mitosis (max distance 10 px)
+   - Track merging: **Disable**
+6. **Filter Tracks**: Add filter "Track duration > 5 frames" to remove spurious tracks.
+7. **Export Results**: Actions → **Export tracks to CSV**
+   - Save to `[location]/Tracking Result/` using the exact filenames from the generated guide:
+     - `Rep-X_Time_Condition_Location_Red_Seg-spots.csv`
+     - `Rep-X_Time_Condition_Location_Red_Seg-edges.csv`
+     - `Rep-X_Time_Condition_Location_Red_Seg-tracks.csv`
+   - Optionally save the TrackMate session (`.xml`) for reproducibility.
 
-**When to Use**:
+---
 
-- After TrackMate Batch Processing (Option 2 in Step 4)
-- When results are in `Working_Directory/OutputTracks/`
-- Skip if manual processing already saved to location folders
+#### Option B — Batch Tracking (TrackMate Batcher)
 
-**Procedure**:
+1. **Open TrackMate Batcher**: Plugins → Tracking → TrackMate Batcher.
+2. Set **Input folder** to `Working_Directory/InputMask/` and **Output folder** to `Working_Directory/OutputTracks/`.
+3. Load the template session file (`.xml`) included in the package or saved from a manual run (Option A).
+4. Select outputs: ✓ Spots CSV, ✓ Edges CSV, ✓ Tracks CSV. **Uncheck** "The 3 Tables (xlsx)" (known compatibility issue).
+5. Click **Run**. After completion, proceed to **Step 4.5** to relocalize results.
 
-1. **In Pipeline GUI**: Click **"▶️ Run"** for Step 4.5
-2. **Pipeline will**:
+---
 
-   - Scan `OutputTracks/` for CSV files
-   - Parse filenames to determine location
-   - Create `Tracking Result/` subfolder in each location
-   - Move CSV files to corresponding location folders
-3. **Verify**: `OutputTracks/` folder should be empty after successful relocation
+**Verify (GUI)**: Click **"✓ Verify Results"** to confirm all locations have the required CSV files (X/X locations).
 
-**Expected Result**:
-
-Files move from:
+**Expected output** (per location):
 
 ```
-Working_Directory/OutputTracks/
-├── Rep-1_0-24h_Dense_B1_2_Red_Seg-spots.csv
-└── ...
-```
-
-To:
-
-```
-Input_Data_Folder/Rep1/0-24h/Dense/B1_2/Tracking Result/
+B1_2/Tracking Result/
 ├── Rep-1_0-24h_Dense_B1_2_Red_Seg-spots.csv
 ├── Rep-1_0-24h_Dense_B1_2_Red_Seg-edges.csv
 └── Rep-1_0-24h_Dense_B1_2_Red_Seg-tracks.csv
 ```
 
-**Timing**: <1 second per location
+| File             | Content                                                  |
+| ---------------- | -------------------------------------------------------- |
+| `*-spots.csv`  | Per-spot position and intensity at each timepoint        |
+| `*-edges.csv`  | Links between spots (connectivity across frames)         |
+| `*-tracks.csv` | Summary statistics per track (speed, displacement, etc.) |
 
 ---
 
-### Step 5: Subtrack Lineage Analysis
+### Step 4.5: Results Relocalization (Optional)
 
-**Purpose**: Analyze cell division events, generate subtrack lineages with quality control, and compute motility metrics for each subtrack.
+**Purpose**: Move batch-processed results from the centralized `OutputTracks/` folder into individual location folders.
 
-**Method**: Automated (Python)
+**When to use**: Only after Option B (Batch Tracking) in Step 4. Skip this step if you used Option A (Manual Tracking).
 
-**Algorithm**: Recursive depth-first search (DFS) to build subtrack trees from TrackMate edges, with QC filtering
-
-**Quality Control Filters**:
-
-- **Max Splits Allowed**: Removes tracks with excessive division events (default: 3)
-  - Filters out potential tracking errors or over-segmentation
-- **Min Track Duration**: Filters out short-lived tracks (default: 20 frames)
-  - Ensures sufficient data for meaningful motility analysis
-
-**Procedure**:
-
-1. **In Pipeline GUI**: Click **"▶️ Run"** for Step 6
-2. **Pipeline will**:
-
-   - For each location:
-     - Load tracking results
-     - Identify split events from edges CSV
-     - Build subtrack tree using DFS algorithm
-     - Apply QC filters
-     - Calculate per-subtrack statistics:
-       - Mean speed
-       - Linearity of forward progression
-       - Mean directional change rate
-       - Duration
-       - Displacement
-     - Generate three output files
-3. **Outputs saved** to `Tracking Result/secondary_analysis/` subfolder
-
-**Expected Output**:
-
-```
-Input_Data_Folder/Rep1/0-24h/Dense/B1_2/Tracking Result/
-├── (primary tracking files)
-└── secondary_analysis/
-    ├── Rep-1_0-24h_Dense_B1_2_Red_Seg-subtrack_statistics.csv
-    ├── Rep-1_0-24h_Dense_B1_2_Red_Seg-subtrack_edges.csv
-    └── Rep-1_0-24h_Dense_B1_2_Red_Seg-subtrack_lineage.csv
-```
-
-**Output File Descriptions**:
-
-1. **`*-subtrack_statistics.csv`**:
-
-   - One row per subtrack
-   - Columns: SUBTRACK_ID, PARENT_TRACK_ID, MEAN_SPEED, LINEARITY, DIRECTIONAL_CHANGE_RATE, DURATION, DISPLACEMENT, etc.
-2. **`*-subtrack_edges.csv`**:
-
-   - Parent-child relationships between subtracks
-   - Columns: PARENT_SUBTRACK_ID, CHILD_SUBTRACK_ID, SPLIT_FRAME
-3. **`*-subtrack_lineage.csv`**:
-
-   - Complete lineage tree structure
-   - Columns: SUBTRACK_ID, GENERATION, LINEAGE_ROOT_ID, PATH_FROM_ROOT
-
-**Timing**: ~5-15 seconds per location (depends on track complexity)
-
-**Note**: Pipeline automatically handles locations without division events (generates empty secondary_analysis folder or single-subtrack entries).
+**In the GUI**: Click **"▶️ Run"** for Step 4.5. The pipeline parses filenames and moves each CSV to the corresponding `Tracking Result/` subfolder. `OutputTracks/` will be empty after successful relocation.
 
 ---
 
-### Step 6: Fluorescence Intensity Analysis
+### Step 5: Fluorescence Intensity Analysis
 
-**Purpose**: Extract Red/Green fluorescence intensities for each tracked cell over time to monitor nuclear envelope integrity.
+**Purpose**: Extract mean Red and Green fluorescence intensities per tracked cell at each frame, and compute the Red/Green ratio ($I_R / (I_G + \varepsilon)$, $\varepsilon = 10^{-6}$) as a proxy for nuclear envelope rupture.
 
-**Method**: Automated (Python)
+**In the GUI**: Click **"▶️ Run"** for Step 5.
 
-**Background**: Nuclear envelope rupture events are characterized by changes in Red/Green fluorescence intensity ratios when using appropriate fluorescent reporters.
+The pipeline loads tracking results, stabilized fluorescence stacks, and segmentation masks, then generates a per-track intensity timeseries CSV.
 
-**Procedure**:
-
-1. **In Pipeline GUI**: Click **"▶️ Run"** for Step 5
-2. **Pipeline will**:
-
-   - For each location:
-     - Load tracking results (`*-spots.csv`, `*-edges.csv`, `*-tracks.csv`)
-     - Load fluorescence images:
-       - `*_Red_Stabilized.tif`
-       - `*_Green_Stabilized.tif`
-     - Load segmentation mask (`*_Red_Seg.tif`)
-     - For each tracked cell (Track ID):
-       - Extract mean Red intensity at each timepoint
-       - Extract mean Green intensity at each timepoint
-       - Calculate Red/Green ratio
-       - Normalize by median
-     - Generate intensity timeseries CSV
-3. **Output Saved** to `Tracking Result/` folder for each location
-
-**Expected Output**:
+**Expected output** (per location):
 
 ```
-Input_Data_Folder/Rep1/0-24h/Dense/B1_2/Tracking Result/
-├── Rep-1_0-24h_Dense_B1_2_Red_Seg-spots.csv
-├── Rep-1_0-24h_Dense_B1_2_Red_Seg-edges.csv
-├── Rep-1_0-24h_Dense_B1_2_Red_Seg-tracks.csv
-└── Rep-1_0-24h_Dense_B1_2_Red_Seg-intensity_timeseries.csv  ← NEW
+B1_2/Tracking Result/
+└── Rep-1_0-24h_Dense_B1_2_Red_Seg-subtrack_fluorescence.csv
 ```
 
-**Output Format** (`*-intensity_timeseries.csv`):
-
-| Column        | Description                             |
-| ------------- | --------------------------------------- |
-| TRACK_ID      | Unique track identifier from TrackMate  |
-| FRAME_0_RED   | Red channel mean intensity at frame 0   |
-| FRAME_0_GREEN | Green channel mean intensity at frame 0 |
-| FRAME_0_RATIO | Red/Green ratio (normalized) at frame 0 |
-| FRAME_1_RED   | Red channel mean intensity at frame 1   |
-| ...           | (continues for all frames)              |
-
-**Timing**: ~10-30 seconds per location (depends on track count and stack size)
+| Column            | Description                           |
+| ----------------- | ------------------------------------- |
+| `TRACK_ID`      | TrackMate track identifier            |
+| `FRAME_N_RED`   | Mean Red intensity at frame N         |
+| `FRAME_N_GREEN` | Mean Green intensity at frame N       |
+| `FRAME_N_RATIO` | Normalized Red/Green ratio at frame N |
 
 ---
+
+### Step 6: Subtrack Lineage Analysis
+
+**Purpose**: Decompose each track at division points into subtracks, apply quality-control filters, and compute per-subtrack motility metrics. This produces division-aware statistics that avoid averaging pre- and post-division measurements.
+
+**In the GUI**: Click **"▶️ Run"** for Step 6.
+
+QC filters (configurable in the Configuration tab):
+
+- **Max Splits Allowed** (default: 3) — removes tracks with excessive division events
+- **Min Track Duration** (default: 20 frames) — removes short-lived tracks
+
+**Expected output** (per location):
+
+```
+B1_2/Tracking Result/secondary_analysis/
+├── Rep-1_0-24h_Dense_B1_2_Red_Seg-subtrack_statistics.csv
+├── Rep-1_0-24h_Dense_B1_2_Red_Seg-subtrack_edges.csv
+└── Rep-1_0-24h_Dense_B1_2_Red_Seg-subtrack_lineage.csv
+```
+
+| File                          | Content                                                                                          |
+| ----------------------------- | ------------------------------------------------------------------------------------------------ |
+| `*-subtrack_statistics.csv` | Per-subtrack motility metrics: speed, linearity, directional change rate, displacement, duration |
+| `*-subtrack_edges.csv`      | Parent–child relationships between subtracks at each division                                   |
+| `*-subtrack_lineage.csv`    | Full lineage tree: generation, root ID, path from root                                           |
 
 ---
 
 ## Output File Reference
 
-### Complete Output Structure
-
-After running all pipeline steps, your data structure will be:
+After completing all steps, the full output structure is:
 
 ```
 Working_Directory/
-├── pipeline_config.json                    # Saved configuration
-├── image_stabilization_macro.ijm           # Auto-generated (Step 2)
-├── TrackMate_Operation_Guide.txt           # Auto-generated (Step 4)
-│
-├── InputMask/                              # Flattened segmentation masks
-│   ├── Rep-1_0-24h_Dense_B1_2_Red_Seg.tif
-│   └── ...
-│
-└── OutputTracks/                            # (Empty after Step 4.5)
+├── pipeline_config.json
+├── image_stabilization_macro.ijm       # Auto-generated (Step 2)
+├── TrackMate_Operation_Guide.txt        # Auto-generated (Step 4)
+├── InputMask/                           # Segmentation masks
+│   └── Rep-1_0-24h_Dense_B1_2_Red_Seg.tif
+└── OutputTracks/                        # Empty after Step 4.5
 
-Input_Data_Folder/
-└── Rep 1/
-    └── 0-24h/
-        └── Dense/
-            └── B1_2/
-                ├── B1_2_0001.tif (original)
-                ├── B1_2_0002.tif (original)
-                │
-                ├── B1_2_Green/              # Step 1: Split channels
-                │   ├── B1_2_Green_0001.tif
-                │   └── ...
-                ├── B1_2_Phase/
-                │   └── ...
-                ├── B1_2_Red/
-                │   └── ...
-                │
-                ├── B1_2_Red_Stabilized.tif   # Step 2: Stabilized
-                ├── B1_2_Green_Stabilized.tif
-                ├── B1_2_Phase_Stabilized.tif
-                │
-                └── Tracking Result/          # Steps 4-6
-                    ├── Rep-1_0-24h_Dense_B1_2_Red_Seg-spots.csv
-                    ├── Rep-1_0-24h_Dense_B1_2_Red_Seg-edges.csv
-                    ├── Rep-1_0-24h_Dense_B1_2_Red_Seg-tracks.csv
-                    ├── Rep-1_0-24h_Dense_B1_2_Red_Seg-intensity_timeseries.csv
-                    └── secondary_analysis/
-                        ├── Rep-1_0-24h_Dense_B1_2_Red_Seg-subtrack_statistics.csv
-                        ├── Rep-1_0-24h_Dense_B1_2_Red_Seg-subtrack_edges.csv
-                        └── Rep-1_0-24h_Dense_B1_2_Red_Seg-subtrack_lineage.csv
+Input_Data_Folder/Rep 1/0-24h/Dense/B1_2/
+├── B1_2_0001.tif                        # Original (unchanged)
+├── B1_2_Green/                          # Step 1
+├── B1_2_Phase/
+├── B1_2_Red/
+├── B1_2_Red_Stabilized.tif             # Step 2
+├── B1_2_Green_Stabilized.tif
+├── B1_2_Phase_Stabilized.tif
+└── Tracking Result/                     # Steps 4–6
+    ├── *-spots.csv
+    ├── *-edges.csv
+    ├── *-tracks.csv
+    ├── *-subtrack_fluorescence.csv
+    └── secondary_analysis/
+        ├── *-subtrack_statistics.csv
+        ├── *-subtrack_edges.csv
+        └── *-subtrack_lineage.csv
 ```
 
-### Key Output Files for Downstream Analysis
+**Key files for downstream analysis**:
 
-| File                           | Primary Use                       | Key Metrics                                                                                     |
-| ------------------------------ | --------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `*-tracks.csv`               | Overall track statistics          | TRACK_MEAN_SPEED, LINEARITY_OF_FORWARD_PROGRESSION, MEAN_DIRECTIONAL_CHANGE_RATE, NUMBER_SPLITS |
-| `*-intensity_timeseries.csv` | Nuclear envelope rupture analysis | Red/Green intensity ratios over time per track                                                  |
-| `*-subtrack_statistics.csv`  | Division-aware motility analysis  | Per-subtrack motility metrics with lineage information                                          |
-| `*-subtrack_lineage.csv`     | Division tree reconstruction      | Parent-child relationships, generation depth                                                    |
+| File                            | Primary Use                       | Key Metrics                                                 |
+| ------------------------------- | --------------------------------- | ----------------------------------------------------------- |
+| `*-tracks.csv`                | Overall track statistics          | Mean speed, linearity, directional change, number of splits |
+| `*-subtrack_fluorescence.csv` | Nuclear envelope rupture analysis | Red/Green intensity ratio per subtrack over time            |
+| `*-subtrack_statistics.csv`   | Division-aware motility           | Per-subtrack speed, linearity, displacement, duration       |
+| `*-subtrack_lineage.csv`      | Division tree reconstruction      | Parent-child relationships, generation depth                |
 
 ---
 
-## Troubleshooting & Optimization
+## Troubleshooting
 
-### Common Issues and Solutions
+| Problem                              | Likely Cause                                          | Solution                                                                                                     |
+| ------------------------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| No objects detected in TrackMate     | Blank or incorrectly labeled mask                     | Open `*_Red_Seg.tif` in Fiji and verify non-zero integer labels; re-run Step 3 if blank                    |
+| "Dimension mismatch" in TrackMate    | Time assigned as Z instead of T                       | When prompted in TrackMate, swap Z/T to assign time as**T**                                            |
+| Too many track splits                | High mask noise or aggressive linking                 | Increase linking max distance in TrackMate; filter tracks < 5 frames; consider retraining segmentation model |
+| TrackMate Batcher fails or crashes   | Incompatible session file or `.xlsx` output enabled | Regenerate `.xml` from a fresh manual run; uncheck "The 3 Tables (xlsx)" output                            |
+| StarDist memory error                | Large stack or high object density                    | Reduce input TIFF region; enable GPU if available                                                            |
+| Residual jitter after stabilization  | Suboptimal stabilizer settings                        | Confirm pyramid level 3 and template update disabled in the macro                                            |
+| Incorrect Red/Green pairing          | Mismatched frame counts between channels              | Verify stabilized TIFFs have matching frame counts; re-run Step 2 if needed                                  |
+| Subtrack analysis yields 0 subtracks | Tracks too short or too many splits                   | Lower Min Track Duration or raise Max Splits in Configuration tab                                            |
+| "Please load the files first!"       | Locations not scanned                                 | Click**"🔍 Scan Data Folder"** in the Pipeline tab before running any step                                   |
+| Verification always shows 0/0        | Location list empty                                   | Confirm Scan Data Folder was run and detected > 0 locations                                                  |
 
-| Issue                                                        | Possible Cause                                                                          | Solution                                                                                                                                                                                                                  |
-| ------------------------------------------------------------ | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **No objects detected in TrackMate**                   | Segmentation mask may be blank or improperly labeled                                    | Open `*_Red_Seg.tif` in Fiji and ensure objects have integer labels. Use label viewer or LUTs to verify. Re-run segmentation if necessary.                                                                              |
-| **Tracking fails with "Dimension mismatch" error**     | TrackMate misinterpreted Z/T stack                                                      | When prompted, ensure time is assigned as**T**, not Z. Swap dimensions if necessary. Check Image → Properties in Fiji. Pipeline handles this automatically but issue can occur with manually added masks.          |
-| **High rate of over-tracking / too many track splits** | - High noise in mask `<br>`- Short-lived ROIs `<br>`- Aggressive linking parameters | - Increase**Linking max distance** in TrackMate `<br>`- Disable splitting if mitosis isn't of interest `<br>`- Filter out short tracks (<5 frames)`<br>`- Refine segmentation model with better training data |
-| **TrackMate fails to launch or crashes on batch**      | GUI bug or batcher session file incompatible                                            | Try running one instance manually to regenerate a fresh `.xml` session file. Avoid enabling `.xlsx` output if not needed (known compatibility issue).                                                                 |
-| **StarDist memory error**                              | Large TIFF stack or too many objects in one frame                                       | - Reduce `patch_size` or `batch_size` in model configuration `<br>`- Crop input TIFF to smaller regions `<br>`- Use grayscale instead of RGB (pipeline default design)`<br>`- Enable GPU if available           |
-| **Incorrect Red/Green intensity pairing**              | Mismatched TIFF sequences or inconsistent frame counts                                  | Verify all `*_Red_Stabilized.tif` and `*_Green_Stabilized.tif` have the same number of frames and order. Re-run stabilization if needed.                                                                              |
-| **Stabilization not effective (residual jitter)**      | Image Stabilizer pyramid level too low, or bad reference frame                          | Set pyramid level to**3**. Use **no template update**. Try testing stabilization on single-location macro first. Consider manual verification of reference frame quality.                                     |
-| **Final summary tables missing some locations**        | Tracking or segmentation was skipped for certain folders                                | Review raw folders for missing `*_Seg.tif` or `*-tracks.csv`. Re-run missing steps manually if needed. Check GUI log for errors.                                                                                      |
-| **Red/Green ratio spikes or flatlines unexpectedly**   | - Mask shifts due to drift `<br>`- ROI does not cover nucleus fully                   | Visually inspect a few track masks overlaid on image stack. Consider refining segmentation model or using median filters for intensity extraction.                                                                        |
-| **Batch script not producing all result files**        | Script encountered exception mid-run                                                    | Run batch scripts with console open. Add try-except logging in loop for error tracing. Test batcher with one instance first to debug.                                                                                     |
-| **"Please load the files first!" message**             | Locations not scanned in GUI                                                            | Click**"🔍 Scan Data Folder"** button in Pipeline Tab before running any steps.                                                                                                                                           |
-| **Verification always shows 0/0 passed**               | Locations list is empty                                                                 | Ensure you've clicked "Scan Data Folder" and verified location count is >0 before running manual steps.                                                                                                                   |
+---
 
 ## References
 
-### Software & Methods
-
-- **StarDist**: Schmidt U, Weigert M, Broaddus C, Myers G. "Cell Detection with Star-Convex Polygons." In: *Medical Image Computing and Computer Assisted Intervention – MICCAI 2018*. Lecture Notes in Computer Science, vol 11071. Springer, 2018. doi:10.1007/978-3-030-00934-2_30
-- **TrackMate**: Tinevez J-Y, Perry N, Schindelin J, et al. "TrackMate: An open and extensible platform for single-particle tracking." *Methods* 2017;115:80-90. doi:10.1016/j.ymeth.2016.09.016
-- **ImageJ/Fiji**: Schindelin J, Arganda-Carreras I, Frise E, et al. "Fiji: an open-source platform for biological-image analysis." *Nature Methods* 2012;9(7):676-682. doi:10.1038/nmeth.2019
-- **Image Stabilizer Plugin**: Li K. "The image stabilizer plugin for ImageJ." http://www.cs.cmu.edu/~kangli/code/Image_Stabilizer.html
-
-### Resource Training
-
-- **ZeroCostDL4Mic**: von Chamier L, Laine RF, Jukkala J, et al. "Democratising deep learning for microscopy with ZeroCostDL4Mic." *Nature Communications* 2021;12:2276. doi:10.1038/s41467-021-22518-0
-  - Training notebook and handbook: https://github.com/HenriquesLab/ZeroCostDL4Mic/wiki
+- **StarDist**: Schmidt U et al. "Cell Detection with Star-Convex Polygons." *MICCAI 2018*. doi:10.1007/978-3-030-00934-2_30
+- **TrackMate**: Tinevez J-Y et al. "TrackMate: An open and extensible platform for single-particle tracking." *Methods* 2017;115:80–90. doi:10.1016/j.ymeth.2016.09.016
+- **Fiji/ImageJ**: Schindelin J et al. "Fiji: an open-source platform for biological-image analysis." *Nature Methods* 2012;9(7):676–682. doi:10.1038/nmeth.2019
+- **Image Stabilizer Plugin**: Li K. http://www.cs.cmu.edu/~kangli/code/Image_Stabilizer.html
+- **ZeroCostDL4Mic**: von Chamier L et al. "Democratising deep learning for microscopy with ZeroCostDL4Mic." *Nat Commun* 2021;12:2276. doi:10.1038/s41467-021-22518-0
 
 ---
 
-## Version History & Notes
+## Version History
 
-**Version 2.0** (February 2026)
+**v2.1** (February 2026) - Fully Reconstructed GUI design.
 
-- Complete GUI implementation with real-time monitoring
-- Auto-generated ImageJ macros and TrackMate guides
-- Integrated verification dialogs
-- Enhanced error handling and logging
-- Unified configuration management
-
-**Version 1.1** (May 2025)
-
-- Initial protocol documentation
-- Command-line interface
-- Basic batch processing
+**v2.0** (February 2026) — Full GUI implementation; auto-generated macros and guides; verification dialogs; unified configuration management.
+**v1.1** (May 2025) — Initial release with command-line interface and basic batch processing.
 
 ---
 
-## Support & Contact
-
-For issues, questions, or contributions:
-
-**Author**: Oriana Chen
-**Lab**: Cornell Univeristy Lammerding Lab
-
----
-
-**End of Protocol**
+**Author**: Oriana (Sihe) Chen · Cornell University Lammerding Lab

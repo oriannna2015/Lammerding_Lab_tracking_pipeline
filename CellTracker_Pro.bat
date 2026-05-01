@@ -1,65 +1,55 @@
 @echo off
-REM ============================================
-REM  CellTracker Pro - One-Click Launcher
-REM  Double-click this file to start the app.
-REM ============================================
+setlocal EnableDelayedExpansion
 
-cd /d "%~dp0"
-
-REM Check if local venv exists
-if exist "cell_tracking_pipeline\Scripts\activate.bat" (
-    echo [OK] Virtual environment found.
-    call "cell_tracking_pipeline\Scripts\activate.bat"
-    goto :launch
-)
-
-REM No local venv - create one
-echo ============================================
-echo  Setting up Python environment...
-echo ============================================
+echo ====================================================
+echo   CellTracker Pro - Lammerding Lab
+echo ====================================================
 echo.
 
-REM Check if Python is available
+REM --- Verify Python is reachable (assumes environment is already activated) ---
 python --version >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] Python not found in PATH.
-    echo Please install Python 3.8 or higher and add to PATH.
+    echo.
+    echo Please activate your Python environment first, then run this script again.
+    echo.
+    echo   conda:  conda activate ^<env_name^>
+    echo   venv:   ^<env_folder^>\Scripts\activate
+    echo.
+    echo See README.md - Installation section for setup instructions.
+    echo.
     pause
     exit /b 1
 )
 
-echo [1/3] Creating virtual environment...
-python -m venv cell_tracking_pipeline
-if errorlevel 1 (
-    echo [ERROR] Failed to create virtual environment.
-    pause
-    exit /b 1
-)
-
-echo [2/3] Activating environment...
-call "cell_tracking_pipeline\Scripts\activate.bat"
-
-echo [3/3] Installing dependencies (this may take a few minutes)...
-pip install -r requirements.txt
+REM --- Check that required packages are installed ---
+echo Checking environment...
+python -c "import bottle, numpy, pandas, tifffile, stardist" >nul 2>&1
 if errorlevel 1 (
     echo.
-    echo [ERROR] Failed to install dependencies.
+    echo [ERROR] One or more required packages are missing.
+    echo.
+    echo Make sure your environment is activated and run Install_Dependencies.bat
+    echo to install all dependencies, or refer to README.md - Installation.
+    echo.
     pause
     exit /b 1
 )
 
+echo [OK] Environment ready.
 echo.
-echo [OK] Environment setup complete!
-echo ============================================
+echo Starting CellTracker Pro...
 echo.
 
-:launch
-REM Launch the application
+REM --- Launch GUI ---
+cd /d "%~dp0"
 python main.py
 
-REM If there was an error, pause so user can read it
 if errorlevel 1 (
     echo.
     echo [ERROR] Application exited with an error.
+    echo Please refer to README.md - Troubleshooting for help.
     pause
 )
+
+endlocal
